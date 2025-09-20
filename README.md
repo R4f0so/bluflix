@@ -1,4 +1,4 @@
-# bluflix
+# Bluflix
 
 A new Flutter project.
 
