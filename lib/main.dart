@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async'; // pra usar o Timer
 import 'options.dart'; // importar a tela de login
+import 'avatar.dart';
 
 void main() {
   runApp(const BluFlixApp());
@@ -13,7 +14,8 @@ class BluFlixApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
+      //home: const SplashScreen(),
+      home: const AvatarScreen(),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'login.dart'; // importe sua tela de login aqui
 
 class AvatarScreen extends StatefulWidget {
   const AvatarScreen({super.key});
@@ -27,10 +28,14 @@ class _AvatarScreenState extends State<AvatarScreen>
   @override
   void initState() {
     super.initState();
+    // Seleciona o primeiro avatar por padrão
+    _selectedAvatar = avatars[0];
+
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
     )..repeat(reverse: true);
+
     _animation = Tween<double>(
       begin: 0,
       end: 20,
@@ -49,10 +54,13 @@ class _AvatarScreenState extends State<AvatarScreen>
     });
   }
 
-  void _deselectAvatar() {
-    setState(() {
-      _selectedAvatar = null;
-    });
+  void _goBackToLogin() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const LoginScreen(),
+      ), // sua tela de login
+    );
   }
 
   Widget _avatarWidget(String avatar) {
@@ -65,12 +73,21 @@ class _AvatarScreenState extends State<AvatarScreen>
           double offset = isSelected ? -_animation.value : 0;
           return Transform.translate(
             offset: Offset(0, offset),
-            child: ClipOval(
-              child: Image.asset(
-                avatar,
-                width: 100,
-                height: 100,
-                fit: BoxFit.cover,
+            child: Container(
+              padding: isSelected ? const EdgeInsets.all(4) : EdgeInsets.zero,
+              decoration: isSelected
+                  ? BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.blueAccent, width: 3),
+                    )
+                  : null,
+              child: ClipOval(
+                child: Image.asset(
+                  avatar,
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           );
@@ -132,48 +149,43 @@ class _AvatarScreenState extends State<AvatarScreen>
               ),
             ),
 
-            // Botões aparecerão só se algum avatar estiver selecionado
-            if (_selectedAvatar != null) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 10,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Botão Voltar
-                    ElevatedButton(
-                      onPressed: _deselectAvatar,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade300,
-                        foregroundColor: Colors.black,
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+            // Botões
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Botão Voltar
+                  ElevatedButton(
+                    onPressed: _goBackToLogin,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade300,
+                      foregroundColor: Colors.black,
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text("Voltar"),
                     ),
-                    // Botão Escolher esta imagem
-                    ElevatedButton(
-                      onPressed: () {
-                        // ação de confirmar avatar
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFA9DBF4),
-                        foregroundColor: Colors.black,
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                    child: const Text("Voltar"),
+                  ),
+                  // Botão Escolher esta imagem
+                  ElevatedButton(
+                    onPressed: () {
+                      // ação de confirmar avatar
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFA9DBF4),
+                      foregroundColor: Colors.black,
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text("Escolher esta imagem"),
                     ),
-                  ],
-                ),
+                    child: const Text("Escolher esta imagem"),
+                  ),
+                ],
               ),
-            ],
+            ),
             const SizedBox(height: 20),
           ],
         ),
