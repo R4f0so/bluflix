@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -139,6 +140,29 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
+
+                // Esqueceu a senha? Clique aqui!
+                RichText(
+                  text: TextSpan(
+                    text: "Esqueceu a senha? ",
+                    style: const TextStyle(fontSize: 14, color: Colors.black),
+                    children: [
+                      TextSpan(
+                        text: "Clique aqui!",
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.blueAccent,
+                          decoration: TextDecoration.underline,
+                        ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () {
+                            // ação futura ao clicar
+                          },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 40),
 
                 // Logos Google e Facebook lado a lado
                 Row(

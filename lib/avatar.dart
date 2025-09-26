@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'apelido.dart'; // importe sua tela de apelido aqui
 import 'login.dart'; // importe sua tela de login aqui
 
 class AvatarScreen extends StatefulWidget {
@@ -57,9 +58,7 @@ class _AvatarScreenState extends State<AvatarScreen>
   void _goBackToLogin() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => const LoginScreen(),
-      ), // sua tela de login
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
     );
   }
 
@@ -171,7 +170,13 @@ class _AvatarScreenState extends State<AvatarScreen>
                   // Botão Escolher esta imagem
                   ElevatedButton(
                     onPressed: () {
-                      // ação de confirmar avatar
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              ApelidoScreen(selectedAvatar: _selectedAvatar!),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFA9DBF4),
