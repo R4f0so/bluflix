@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -48,10 +49,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
                         ),
                       ),
                     ),
@@ -73,10 +70,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           fillColor: Colors.white.withAlpha(80),
                           hintText: "Senha",
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
@@ -104,7 +97,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: 200,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      // exemplo: depois de logar, vai para home
+                      context.go('/options');
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFA9DBF4),
                       foregroundColor: Colors.black,
@@ -119,13 +115,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Botão de voltar
+                // Botão de voltar → vai para OptionsScreen
                 SizedBox(
                   width: 200,
                   height: 50,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context);
+                      context.go(
+                        '/options',
+                      ); // volta explicitamente para Options
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFA9DBF4),

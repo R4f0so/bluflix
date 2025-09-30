@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
-import 'dart:async'; // pra usar o Timer
-import 'options.dart'; // importar a tela de login
+import 'package:go_router/go_router.dart';
+
+import 'splash.dart';
+import 'options.dart';
+import 'login.dart';
+import 'cadastro.dart';
 import 'avatar.dart';
+import 'apelido.dart';
 
 void main() {
   runApp(const BluFlixApp());
@@ -12,62 +17,44 @@ class BluFlixApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      //home: const SplashScreen(),
-      home: const AvatarScreen(),
+    final router = GoRouter(
+      initialLocation: '/splash',
+      routes: [
+        GoRoute(
+          path: '/splash',
+          builder: (context, state) => const SplashScreen(),
+        ),
+        GoRoute(
+          path: '/options',
+          builder: (context, state) => const OptionsScreen(),
+        ),
+        GoRoute(
+          path: '/login',
+          builder: (context, state) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/cadastro',
+          builder: (context, state) => const CadastroScreen(),
+        ),
+        GoRoute(
+          path: '/avatar',
+          builder: (context, state) => const AvatarScreen(),
+        ),
+        GoRoute(
+          path: '/apelido',
+          builder: (context, state) {
+            final avatar = state.extra as String?;
+            return ApelidoScreen(
+              selectedAvatar: avatar ?? 'assets/avatar1.png',
+            );
+          },
+        ),
+      ],
     );
-  }
-}
 
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  @override
-  void initState() {
-    super.initState();
-
-    // Timer de 10 segundos para ir para a tela de login
-    Timer(const Duration(seconds: 10), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const OptionsScreen()),
-      );
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/morning_background.png"),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Center(
-          child: TweenAnimationBuilder<double>(
-            tween: Tween<double>(
-              begin: 0.5,
-              end: 1.5,
-            ), // escala inicial -> final
-            duration: const Duration(seconds: 10), // mesma duração da Splash
-            builder: (context, scale, child) {
-              return Transform.scale(scale: scale, child: child);
-            },
-            child: Image.asset("assets/logo.png", width: 200),
-          ),
-        ),
-      ),
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      routerConfig: router,
     );
   }
 }

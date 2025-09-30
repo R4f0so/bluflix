@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'login.dart'; // Tela de login
-import 'cadastro.dart'; // Tela de cadastro
+import 'package:go_router/go_router.dart'; // necessário para usar context.go
 
 class OptionsScreen extends StatelessWidget {
   const OptionsScreen({super.key});
@@ -34,12 +33,7 @@ class OptionsScreen extends StatelessWidget {
                 height: 50,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginScreen(),
-                      ),
-                    );
+                    context.go('/login'); // go_router substitui Navigator
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFA9DBF4),
@@ -53,6 +47,7 @@ class OptionsScreen extends StatelessWidget {
                   child: const Text("Login", style: TextStyle(fontSize: 18)),
                 ),
               ),
+
               const SizedBox(height: 16), // espaço entre os botões
               // Botão de criar conta
               SizedBox(
@@ -60,12 +55,7 @@ class OptionsScreen extends StatelessWidget {
                 height: 50,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CadastroScreen(),
-                      ),
-                    );
+                    context.go('/cadastro'); // go_router substitui Navigator
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFA9DBF4),
