@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "846678971915",
+    "project_id": "bluflix-tg",
+    "storage_bucket": "bluflix-tg.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:846678971915:android:dd3925f1bb6e571fb4190e",
+        "android_client_info": {
+          "package_name": "com.example.bluflix"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "846678971915-sqv8mvt8ii3iau97ifj76t7gh05rtn0r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtAccdNaGd1KFs1ptgfqYt3tVLCLmvPVw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "846678971915-sqv8mvt8ii3iau97ifj76t7gh05rtn0r.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

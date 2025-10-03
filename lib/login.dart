@@ -1,7 +1,7 @@
 import 'dart:ui';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,7 +11,78 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool _obscurePassword = true; // controla se a senha está oculta
+  final _formKey = GlobalKey<FormState>();
+
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _senhaController = TextEditingController();
+
+  bool _obscurePassword = true;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _senhaController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      try {
+        UserCredential userCredential = await FirebaseAuth.instance
+            .signInWithEmailAndPassword(
+              email: _emailController.text.trim(),
+              password: _senhaController.text.trim(),
+            );
+
+        // Login bem-sucedido → print no console
+        print(
+          "Login realizado com sucesso! Usuário: ${userCredential.user?.email}",
+        );
+
+        // Verifica se ainda está montado antes de usar context
+        if (!mounted) return;
+        context.go('/options');
+      } on FirebaseAuthException catch (e) {
+        String mensagem;
+        if (e.code == 'user-not-found') {
+          mensagem = 'Nenhum usuário encontrado com esse email.';
+        } else if (e.code == 'wrong-password') {
+          mensagem = 'Senha incorreta.';
+        } else {
+          mensagem = 'Erro ao fazer login: ${e.message}';
+        }
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(mensagem)));
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+    }
+  }
+
+  String? _validarCampo(String? valor, String campo) {
+    if (valor == null || valor.trim().isEmpty) {
+      return "$campo é obrigatório";
+    }
+    return null;
+  }
+
+  String? _validarEmail(String? valor) {
+    if (valor == null || valor.trim().isEmpty) {
+      return "E-mail é obrigatório";
+    }
+    final emailRegex = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$");
+    if (!emailRegex.hasMatch(valor.trim())) {
+      return "E-mail inválido";
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,151 +98,136 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: Center(
           child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.asset("assets/logo.png", width: 200),
-                const SizedBox(height: 40),
-
-                // Campo de email
-                SizedBox(
-                  width: 300,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white.withAlpha(80),
-                          hintText: "Email ou usuário",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset("assets/logo.png", width: 200),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Faça login na sua conta",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 30),
 
-                // Campo de senha
-                SizedBox(
-                  width: 300,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                      child: TextField(
-                        obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white.withAlpha(80),
-                          hintText: "Senha",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
+                  // E-mail
+                  _buildTextField(
+                    controller: _emailController,
+                    hint: "E-mail",
+                    validator: _validarEmail,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Senha
+                  _buildTextField(
+                    controller: _senhaController,
+                    hint: "Senha",
+                    obscure: _obscurePassword,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                    validator: (v) => _validarCampo(v, "Senha"),
+                  ),
+                  const SizedBox(height: 30),
+
+                  // Botão Entrar
+                  SizedBox(
+                    width: 200,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _login,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFA9DBF4),
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 4,
+                        shadowColor: Colors.black.withAlpha(77),
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.black)
+                          : const Text(
+                              "Entrar",
+                              style: TextStyle(fontSize: 18),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Botão de voltar → vai para OptionsScreen
+                  SizedBox(
+                    width: 200,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        context.go('/options');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFA9DBF4),
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        elevation: 4,
+                        shadowColor: Colors.black.withAlpha(77),
+                      ),
+                      child: const Text(
+                        "Voltar",
+                        style: TextStyle(fontSize: 18),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 30),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-                // Botão de entrar
-                SizedBox(
-                  width: 200,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // exemplo: depois de logar, vai para home
-                      context.go('/options');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFA9DBF4),
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 4,
-                      shadowColor: Colors.black.withAlpha(77),
-                    ),
-                    child: const Text("Entrar", style: TextStyle(fontSize: 18)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Botão de voltar → vai para OptionsScreen
-                SizedBox(
-                  width: 200,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      context.go(
-                        '/options',
-                      ); // volta explicitamente para Options
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFA9DBF4),
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 4,
-                      shadowColor: Colors.black.withAlpha(77),
-                    ),
-                    child: const Text("Voltar", style: TextStyle(fontSize: 18)),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Esqueceu a senha? Clique aqui!
-                RichText(
-                  text: TextSpan(
-                    text: "Esqueceu a senha? ",
-                    style: const TextStyle(fontSize: 14, color: Colors.black),
-                    children: [
-                      TextSpan(
-                        text: "Clique aqui!",
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.blueAccent,
-                          decoration: TextDecoration.underline,
-                        ),
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () {
-                            // ação futura ao clicar
-                          },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 40),
-
-                // Logos Google e Facebook lado a lado
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset("assets/google.png", width: 50, height: 50),
-                    const SizedBox(width: 20),
-                    Image.asset("assets/facebook.png", width: 50, height: 50),
-                  ],
-                ),
-              ],
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    String? Function(String?)? validator,
+    bool obscure = false,
+    Widget? suffixIcon,
+  }) {
+    return SizedBox(
+      width: 300,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: TextFormField(
+            controller: controller,
+            obscureText: obscure,
+            validator: validator,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white.withAlpha(80),
+              hintText: hint,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              suffixIcon: suffixIcon,
             ),
           ),
         ),

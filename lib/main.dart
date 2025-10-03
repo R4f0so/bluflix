@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // gerado pelo FlutterFire CLI
 
 import 'splash.dart';
 import 'options.dart';
@@ -8,7 +10,12 @@ import 'cadastro.dart';
 import 'avatar.dart';
 import 'apelido.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializa o Firebase com as opções do arquivo firebase_options.dart
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  print("Firebase inicializado com sucesso!");
   runApp(const BluFlixApp());
 }
 

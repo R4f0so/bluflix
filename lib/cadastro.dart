@@ -1,7 +1,8 @@
 import 'dart:ui';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/gestures.dart';
 
 class CadastroScreen extends StatefulWidget {
   const CadastroScreen({super.key});
@@ -13,32 +14,53 @@ class CadastroScreen extends StatefulWidget {
 class _CadastroScreenState extends State<CadastroScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _senhaController = TextEditingController();
   final TextEditingController _confirmarSenhaController =
       TextEditingController();
 
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    _nomeController.dispose();
     _emailController.dispose();
     _senhaController.dispose();
     _confirmarSenhaController.dispose();
     super.dispose();
   }
 
-  void _criarConta() {
+  // Função para criar conta no Firebase
+  Future<void> _criarConta() async {
     if (_formKey.currentState!.validate()) {
-      // aqui você pode salvar dados ou chamar API
-      debugPrint("Nome: ${_nomeController.text}");
-      debugPrint("Email: ${_emailController.text}");
-      debugPrint("Senha: ${_senhaController.text}");
+      setState(() => _isLoading = true);
+      try {
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _senhaController.text.trim(),
+        );
 
-      // navega para avatar
-      context.go('/avatar');
+        // Navega para a tela de avatar
+        if (mounted) context.go('/avatar');
+      } on FirebaseAuthException catch (e) {
+        String mensagem;
+        if (e.code == 'weak-password') {
+          mensagem = 'A senha é muito fraca.';
+        } else if (e.code == 'email-already-in-use') {
+          mensagem = 'Este email já está em uso.';
+        } else {
+          mensagem = 'Erro ao criar conta: ${e.message}';
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(mensagem)));
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 
@@ -91,137 +113,61 @@ class _CadastroScreenState extends State<CadastroScreen> {
                   ),
                   const SizedBox(height: 30),
 
-                  // Nome de usuário
-                  SizedBox(
-                    width: 300,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                        child: TextFormField(
-                          controller: _nomeController,
-                          validator: (value) => _validarCampo(value, "Nome"),
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Colors.white.withAlpha(80),
-                            hintText: "Nome de Usuário",
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
                   // E-mail
-                  SizedBox(
-                    width: 300,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                        child: TextFormField(
-                          controller: _emailController,
-                          validator: _validarEmail,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Colors.white.withAlpha(80),
-                            hintText: "E-mail",
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                  _buildTextField(
+                    controller: _emailController,
+                    hint: "E-mail",
+                    validator: _validarEmail,
                   ),
                   const SizedBox(height: 16),
 
                   // Senha
-                  SizedBox(
-                    width: 300,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                        child: TextFormField(
-                          controller: _senhaController,
-                          obscureText: _obscurePassword,
-                          validator: (value) => _validarCampo(value, "Senha"),
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Colors.white.withAlpha(80),
-                            hintText: "Senha",
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                            ),
-                          ),
-                        ),
+                  _buildTextField(
+                    controller: _senhaController,
+                    hint: "Senha",
+                    obscure: _obscurePassword,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                       ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
                     ),
+                    validator: (v) => _validarCampo(v, "Senha"),
                   ),
                   const SizedBox(height: 16),
 
                   // Confirmar senha
-                  SizedBox(
-                    width: 300,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                        child: TextFormField(
-                          controller: _confirmarSenhaController,
-                          obscureText: _obscurePassword,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return "Confirme sua senha";
-                            }
-                            if (value.trim() != _senhaController.text.trim()) {
-                              return "As senhas não são iguais";
-                            }
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Colors.white.withAlpha(80),
-                            hintText: "Confirmar senha",
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                            ),
-                          ),
-                        ),
+                  _buildTextField(
+                    controller: _confirmarSenhaController,
+                    hint: "Confirmar senha",
+                    obscure: _obscurePassword,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                       ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
                     ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Confirme sua senha";
+                      }
+                      if (value.trim() != _senhaController.text.trim()) {
+                        return "As senhas não são iguais";
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 30),
 
@@ -230,7 +176,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
                     width: 200,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: _criarConta,
+                      onPressed: _isLoading ? null : _criarConta,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFA9DBF4),
                         foregroundColor: Colors.black,
@@ -240,10 +186,12 @@ class _CadastroScreenState extends State<CadastroScreen> {
                         elevation: 4,
                         shadowColor: Colors.black.withAlpha(77),
                       ),
-                      child: const Text(
-                        "Criar conta",
-                        style: TextStyle(fontSize: 18),
-                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.black)
+                          : const Text(
+                              "Criar conta",
+                              style: TextStyle(fontSize: 18),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -254,9 +202,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () {
-                        context.go(
-                          '/options',
-                        ); // volta explicitamente para Options
+                        context.go('/options');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFA9DBF4),
@@ -275,61 +221,68 @@ class _CadastroScreenState extends State<CadastroScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Esqueceu a senha? Clique aqui!
-                  RichText(
-                    text: TextSpan(
-                      text: "Esqueceu a senha? ",
-                      style: const TextStyle(fontSize: 14, color: Colors.black),
-                      children: [
-                        TextSpan(
-                          text: "Clique aqui!",
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.blueAccent,
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              // ação futura ao clicar
-                            },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-
-                  // Termos de uso
+                  // Termos de uso e RichText
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: RichText(
                       textAlign: TextAlign.center,
                       text: TextSpan(
-                        text: "Ao se cadastrar, você aceita os",
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 12,
-                        ),
+                        text: "Ao se cadastrar, você aceita os ",
+                        style: const TextStyle(color: Colors.black),
                         children: [
                           TextSpan(
                             text:
-                                " Termos de Uso e a Política de Privacidade do Bluflix",
+                                "Termos de Uso e a Política de Privacidade do Bluflix.",
                             style: const TextStyle(
-                              color: Colors.blueAccent,
-                              fontSize: 12,
-                              decoration: TextDecoration.underline,
+                              color: Color(0xFF003366), // azul escuro
+                              decoration: TextDecoration.none,
                             ),
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
-                                // ação de abrir link
+                                // ação ao clicar, ex: abrir página externa
+                                print("Termos de Uso clicado");
                               },
                           ),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Função para criar campos repetidos
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    String? Function(String?)? validator,
+    bool obscure = false,
+    Widget? suffixIcon,
+  }) {
+    return SizedBox(
+      width: 300,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: TextFormField(
+            controller: controller,
+            obscureText: obscure,
+            validator: validator,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white.withAlpha(80),
+              hintText: hint,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              suffixIcon: suffixIcon,
             ),
           ),
         ),
