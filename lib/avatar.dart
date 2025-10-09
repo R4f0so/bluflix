@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart'; // Importado para navegação consistente
 import 'apelido.dart'; // importe sua tela de apelido aqui
 import 'login.dart'; // importe sua tela de login aqui
 
@@ -15,6 +16,7 @@ class _AvatarScreenState extends State<AvatarScreen>
   late AnimationController _controller;
   late Animation<double> _animation;
 
+  // Lista de avatares (certifique-se de que esses assets existem)
   final List<String> avatars = [
     "assets/avatar1.png",
     "assets/avatar2.png",
@@ -32,6 +34,7 @@ class _AvatarScreenState extends State<AvatarScreen>
     // Seleciona o primeiro avatar por padrão
     _selectedAvatar = avatars[0];
 
+    // Configuração da animação de "flutuação" para o avatar selecionado
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
@@ -55,13 +58,12 @@ class _AvatarScreenState extends State<AvatarScreen>
     });
   }
 
+  // Utiliza context.go('/login') para navegar de volta à tela de login
   void _goBackToLogin() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-    );
+    context.go('/login');
   }
 
+  // Widget construtor de avatar individual com animação e seleção
   Widget _avatarWidget(String avatar) {
     bool isSelected = _selectedAvatar == avatar;
     return GestureDetector(
@@ -69,6 +71,7 @@ class _AvatarScreenState extends State<AvatarScreen>
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
+          // Aplica o deslocamento vertical apenas se o avatar estiver selecionado
           double offset = isSelected ? -_animation.value : 0;
           return Transform.translate(
             offset: Offset(0, offset),
@@ -83,7 +86,7 @@ class _AvatarScreenState extends State<AvatarScreen>
               child: ClipOval(
                 child: Image.asset(
                   avatar,
-                  width: 100,
+                  width: 100, // Tamanho fixo para o avatar
                   height: 100,
                   fit: BoxFit.cover,
                 ),
@@ -110,20 +113,23 @@ class _AvatarScreenState extends State<AvatarScreen>
         child: Column(
           children: [
             const SizedBox(height: 40),
+            // Logo
             Image.asset("assets/logo.png", width: 200),
             const SizedBox(height: 20),
+            // Título
             const Text(
               "Escolha o seu avatar",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
 
-            // Grid de avatares (2 por linha)
+            // Área do Grid de avatares (com scroll)
             Expanded(
               child: SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
+                    // Gera as linhas de avatares (2 por linha)
                     children: List.generate((avatars.length / 2).ceil(), (
                       rowIndex,
                     ) {
@@ -148,7 +154,7 @@ class _AvatarScreenState extends State<AvatarScreen>
               ),
             ),
 
-            // Botões
+            // Botões de Ação
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
               child: Row(
@@ -167,16 +173,19 @@ class _AvatarScreenState extends State<AvatarScreen>
                     ),
                     child: const Text("Voltar"),
                   ),
-                  // Botão Escolher esta imagem
+                  // Botão Escolher esta imagem (Navega para ApelidoScreen)
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              ApelidoScreen(selectedAvatar: _selectedAvatar!),
-                        ),
-                      );
+                      if (_selectedAvatar != null) {
+                        // Utiliza navegação padrão para passar o argumento
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ApelidoScreen(selectedAvatar: _selectedAvatar!),
+                          ),
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFA9DBF4),

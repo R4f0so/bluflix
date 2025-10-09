@@ -1,8 +1,9 @@
 import 'dart:ui';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/gestures.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import necessário para Firestore
 
 class CadastroScreen extends StatefulWidget {
   const CadastroScreen({super.key});
@@ -19,7 +20,8 @@ class _CadastroScreenState extends State<CadastroScreen> {
   final TextEditingController _confirmarSenhaController =
       TextEditingController();
 
-  bool _obscurePassword = true;
+  // Mantendo o controle de obscurecimento simplificado do segundo código
+  bool _obscurePassword = true; 
   bool _isLoading = false;
 
   @override
@@ -30,31 +32,53 @@ class _CadastroScreenState extends State<CadastroScreen> {
     super.dispose();
   }
 
-  // Função para criar conta no Firebase
+  // Função para criar conta no Firebase com persistência no Firestore
   Future<void> _criarConta() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        // 1. Cria o usuário no Firebase Auth
+        UserCredential cred = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _senhaController.text.trim(),
         );
 
-        // Navega para a tela de avatar
-        if (mounted) context.go('/avatar');
+        final user = cred.user;
+        if (user != null) {
+          // 2. Salva os dados iniciais do usuário no Firestore (como no código original)
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set({
+            'uid': user.uid,
+            'email': user.email,
+            'apelido': null,
+            'avatar': null,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+
+          // 3. Navega para a tela de avatar
+          if (!mounted) return;
+          context.go('/avatar');
+        }
       } on FirebaseAuthException catch (e) {
         String mensagem;
         if (e.code == 'weak-password') {
-          mensagem = 'A senha é muito fraca.';
+          mensagem = 'A senha é muito fraca (mínimo 6 caracteres).';
         } else if (e.code == 'email-already-in-use') {
-          mensagem = 'Este email já está em uso.';
+          mensagem = 'Este e-mail já está em uso.';
         } else {
           mensagem = 'Erro ao criar conta: ${e.message}';
         }
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(mensagem)));
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(mensagem)));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Erro inesperado: ${e.toString()}')));
         }
       } finally {
         if (mounted) {
@@ -75,11 +99,46 @@ class _CadastroScreenState extends State<CadastroScreen> {
     if (valor == null || valor.trim().isEmpty) {
       return "E-mail é obrigatório";
     }
+    // Regex mais robusta para e-mail
     final emailRegex = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$");
     if (!emailRegex.hasMatch(valor.trim())) {
       return "E-mail inválido";
     }
     return null;
+  }
+
+  // Widget para construir os campos de texto com efeito blur (layout da versão 2)
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    String? Function(String?)? validator,
+    bool obscure = false,
+    Widget? suffixIcon,
+  }) {
+    return SizedBox(
+      width: 300,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: TextFormField(
+            controller: controller,
+            obscureText: obscure,
+            validator: validator,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white.withAlpha(80),
+              hintText: hint,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              suffixIcon: suffixIcon,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -101,8 +160,11 @@ class _CadastroScreenState extends State<CadastroScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Logo (Layout da Versão 2)
                   Image.asset("assets/logo.png", width: 200),
                   const SizedBox(height: 16),
+                  
+                  // Título
                   const Text(
                     "Cadastre sua conta",
                     style: TextStyle(
@@ -125,7 +187,8 @@ class _CadastroScreenState extends State<CadastroScreen> {
                   _buildTextField(
                     controller: _senhaController,
                     hint: "Senha",
-                    obscure: _obscurePassword,
+                    // Usa o estado de obscurecimento da Versão 2
+                    obscure: _obscurePassword, 
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -134,11 +197,21 @@ class _CadastroScreenState extends State<CadastroScreen> {
                       ),
                       onPressed: () {
                         setState(() {
-                          _obscurePassword = !_obscurePassword;
+                          // Toggle do obscurecimento para ambas as senhas (padrão da Versão 2)
+                          _obscurePassword = !_obscurePassword; 
                         });
                       },
                     ),
-                    validator: (v) => _validarCampo(v, "Senha"),
+                    validator: (v) {
+                       // Usa validação de campo obrigatório e checa o tamanho mínimo 
+                       if (v == null || v.trim().isEmpty) {
+                           return "Senha é obrigatória";
+                       }
+                       if (v.trim().length < 6) {
+                           return "A senha deve ter pelo menos 6 caracteres.";
+                       }
+                       return null;
+                    },
                   ),
                   const SizedBox(height: 16),
 
@@ -146,7 +219,8 @@ class _CadastroScreenState extends State<CadastroScreen> {
                   _buildTextField(
                     controller: _confirmarSenhaController,
                     hint: "Confirmar senha",
-                    obscure: _obscurePassword,
+                    // Usa o mesmo estado de obscurecimento da Versão 2
+                    obscure: _obscurePassword, 
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -155,7 +229,8 @@ class _CadastroScreenState extends State<CadastroScreen> {
                       ),
                       onPressed: () {
                         setState(() {
-                          _obscurePassword = !_obscurePassword;
+                          // Toggle do obscurecimento para ambas as senhas (padrão da Versão 2)
+                          _obscurePassword = !_obscurePassword; 
                         });
                       },
                     ),
@@ -196,7 +271,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Botão de voltar → vai para OptionsScreen
+                  // Botão de voltar → vai para OptionsScreen (Layout da Versão 2)
                   SizedBox(
                     width: 200,
                     height: 50,
@@ -221,7 +296,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Termos de uso e RichText
+                  // Termos de uso e RichText (Layout da Versão 2)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: RichText(
@@ -239,7 +314,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
                             ),
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
-                                // ação ao clicar, ex: abrir página externa
+                                // Ação ao clicar (você pode implementar a navegação para a página de termos)
                                 print("Termos de Uso clicado");
                               },
                           ),
@@ -249,40 +324,6 @@ class _CadastroScreenState extends State<CadastroScreen> {
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Função para criar campos repetidos
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hint,
-    String? Function(String?)? validator,
-    bool obscure = false,
-    Widget? suffixIcon,
-  }) {
-    return SizedBox(
-      width: 300,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-          child: TextFormField(
-            controller: controller,
-            obscureText: obscure,
-            validator: validator,
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white.withAlpha(80),
-              hintText: hint,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              suffixIcon: suffixIcon,
             ),
           ),
         ),
