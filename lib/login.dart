@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,47 +31,108 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
+        // 1. Faz o login no Firebase Auth
         UserCredential userCredential = await FirebaseAuth.instance
             .signInWithEmailAndPassword(
               email: _emailController.text.trim(),
               password: _senhaController.text.trim(),
             );
 
-        // Login bem-sucedido → print no console
         print(
           "Login realizado com sucesso! Usuário: ${userCredential.user?.email}",
         );
 
-        // Verifica se ainda está montado antes de usar context
+        // 2. Verifica se o usuário completou o perfil (apelido e avatar)
         if (!mounted) return;
-        context.go('/options');
+
+        final user = userCredential.user;
+        if (user != null) {
+          // Busca o documento do usuário no Firestore
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+
+          if (!mounted) return;
+
+          // Verifica se o documento existe
+          if (!userDoc.exists) {
+            // Se não existe, cria um documento básico e redireciona para avatar
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .set({
+                  'uid': user.uid,
+                  'email': user.email,
+                  'apelido': null,
+                  'avatar': null,
+                  'createdAt': FieldValue.serverTimestamp(),
+                });
+
+            if (!mounted) return;
+            context.go('/avatar');
+            return;
+          }
+
+          // Pega os dados do usuário
+          final userData = userDoc.data();
+
+          // Verifica se apelido e avatar foram preenchidos
+          if (userData?['apelido'] == null || userData?['avatar'] == null) {
+            // Perfil incompleto - redireciona para escolher avatar
+            print(
+              "Perfil incompleto. Redirecionando para escolha de avatar...",
+            );
+            context.go('/avatar');
+          } else {
+            // Perfil completo - vai para a tela principal
+            print(
+              "Perfil completo! Apelido: ${userData?['apelido']}, Avatar: ${userData?['avatar']}",
+            );
+            context.go('/options');
+          }
+        }
       } on FirebaseAuthException catch (e) {
         String mensagem;
         if (e.code == 'user-not-found') {
           mensagem = 'Nenhum usuário encontrado com esse email.';
         } else if (e.code == 'wrong-password') {
           mensagem = 'Senha incorreta.';
+        } else if (e.code == 'invalid-credential') {
+          mensagem = 'Credenciais inválidas. Verifique email e senha.';
+        } else if (e.code == 'invalid-email') {
+          mensagem = 'E-mail inválido.';
+        } else if (e.code == 'user-disabled') {
+          mensagem = 'Esta conta foi desabilitada.';
+        } else if (e.code == 'too-many-requests') {
+          mensagem = 'Muitas tentativas. Tente novamente mais tarde.';
         } else {
           mensagem = 'Erro ao fazer login: ${e.message}';
         }
 
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(mensagem)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(mensagem),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro inesperado: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
       } finally {
         if (mounted) {
           setState(() => _isLoading = false);
         }
       }
     }
-  }
-
-  String? _validarCampo(String? valor, String campo) {
-    if (valor == null || valor.trim().isEmpty) {
-      return "$campo é obrigatório";
-    }
-    return null;
   }
 
   String? _validarEmail(String? valor) {
@@ -80,6 +142,13 @@ class _LoginScreenState extends State<LoginScreen> {
     final emailRegex = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$");
     if (!emailRegex.hasMatch(valor.trim())) {
       return "E-mail inválido";
+    }
+    return null;
+  }
+
+  String? _validarSenha(String? valor) {
+    if (valor == null || valor.trim().isEmpty) {
+      return "Senha é obrigatória";
     }
     return null;
   }
@@ -115,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 30),
 
-                  // E-mail
+                  // Campo E-mail
                   _buildTextField(
                     controller: _emailController,
                     hint: "E-mail",
@@ -123,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Senha
+                  // Campo Senha
                   _buildTextField(
                     controller: _senhaController,
                     hint: "Senha",
@@ -140,7 +209,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         });
                       },
                     ),
-                    validator: (v) => _validarCampo(v, "Senha"),
+                    validator: _validarSenha,
                   ),
                   const SizedBox(height: 30),
 
@@ -157,10 +226,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 4,
-                        shadowColor: Colors.black.withAlpha(77),
+                        shadowColor: Colors.black.withValues(alpha: 77 / 255),
                       ),
                       child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.black)
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.black,
+                                strokeWidth: 2.5,
+                              ),
+                            )
                           : const Text(
                               "Entrar",
                               style: TextStyle(fontSize: 18),
@@ -170,14 +246,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Botão de voltar → vai para OptionsScreen
+                  // Botão Voltar
                   SizedBox(
                     width: 200,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: () {
-                        context.go('/options');
-                      },
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              context.go('/options');
+                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFA9DBF4),
                         foregroundColor: Colors.black,
@@ -185,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 4,
-                        shadowColor: Colors.black.withAlpha(77),
+                        shadowColor: Colors.black.withValues(alpha: 77 / 255),
                       ),
                       child: const Text(
                         "Voltar",
@@ -221,7 +299,7 @@ class _LoginScreenState extends State<LoginScreen> {
             validator: validator,
             decoration: InputDecoration(
               filled: true,
-              fillColor: Colors.white.withAlpha(80),
+              fillColor: Colors.white.withValues(alpha: 80 / 255),
               hintText: hint,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
