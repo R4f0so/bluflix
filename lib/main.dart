@@ -9,6 +9,7 @@ import 'login.dart';
 import 'cadastro.dart';
 import 'avatar.dart';
 import 'apelido.dart';
+import 'catalogo.dart'; 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +55,10 @@ class BluFlixApp extends StatelessWidget {
               selectedAvatar: avatar ?? 'assets/avatar1.png',
             );
           },
+        ),
+        GoRoute(
+          path: '/catalogo', 
+          builder: (context, state) => const CatalogoScreen(),
         ),
       ],
     );

@@ -71,6 +71,7 @@ flutter:
   assets:
     - assets/logo.png
     - assets/morning_background.png
+    - assets/night_background.png
     - assets/google.png
     - assets/facebook.png
     - assets/avatar1.png

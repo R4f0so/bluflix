@@ -70,6 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 });
 
             if (!mounted) return;
+            print("Documento não existia. Redirecionando para /avatar");
             context.go('/avatar');
             return;
           }
@@ -80,16 +81,12 @@ class _LoginScreenState extends State<LoginScreen> {
           // Verifica se apelido e avatar foram preenchidos
           if (userData?['apelido'] == null || userData?['avatar'] == null) {
             // Perfil incompleto - redireciona para escolher avatar
-            print(
-              "Perfil incompleto. Redirecionando para escolha de avatar...",
-            );
+            print("Perfil incompleto. Redirecionando para /avatar");
             context.go('/avatar');
           } else {
-            // Perfil completo - vai para a tela principal
-            print(
-              "Perfil completo! Apelido: ${userData?['apelido']}, Avatar: ${userData?['avatar']}",
-            );
-            context.go('/options');
+            // ✅ CORREÇÃO: Perfil completo - vai para CATÁLOGO
+            print("Perfil completo! Redirecionando para /catalogo");
+            context.go('/catalogo'); // ✅ MUDANÇA AQUI
           }
         }
       } on FirebaseAuthException catch (e) {
