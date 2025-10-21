@@ -3,14 +3,14 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'app_tema.dart';
 
-class AvatarScreen extends StatefulWidget {
-  const AvatarScreen({super.key});
+class AvatarFilhoScreen extends StatefulWidget {
+  const AvatarFilhoScreen({super.key});
 
   @override
-  State<AvatarScreen> createState() => _AvatarScreenState();
+  State<AvatarFilhoScreen> createState() => _AvatarFilhoScreenState();
 }
 
-class _AvatarScreenState extends State<AvatarScreen>
+class _AvatarFilhoScreenState extends State<AvatarFilhoScreen>
     with SingleTickerProviderStateMixin {
   String? _selectedAvatar;
   late AnimationController _controller;
@@ -37,10 +37,9 @@ class _AvatarScreenState extends State<AvatarScreen>
       duration: const Duration(seconds: 1),
     )..repeat(reverse: true);
 
-    _animation = Tween<double>(
-      begin: 0,
-      end: 20,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _animation = Tween<double>(begin: 0, end: 20).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -79,9 +78,7 @@ class _AvatarScreenState extends State<AvatarScreen>
                         appTema.isDarkMode
                             ? Icons.nightlight_round
                             : Icons.wb_sunny,
-                        color: appTema.isDarkMode
-                            ? Colors.amber
-                            : Colors.orange,
+                        color: appTema.isDarkMode ? Colors.amber : Colors.orange,
                         size: 28,
                       ),
                     ),
@@ -92,7 +89,7 @@ class _AvatarScreenState extends State<AvatarScreen>
               const SizedBox(height: 20),
 
               Text(
-                "Escolha seu avatar",
+                "Escolha o avatar",
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -129,9 +126,8 @@ class _AvatarScreenState extends State<AvatarScreen>
                           return Transform.translate(
                             offset: Offset(0, offset),
                             child: Container(
-                              padding: isSelected
-                                  ? const EdgeInsets.all(4)
-                                  : null,
+                              padding:
+                                  isSelected ? const EdgeInsets.all(4) : null,
                               decoration: isSelected
                                   ? BoxDecoration(
                                       shape: BoxShape.circle,
@@ -142,7 +138,10 @@ class _AvatarScreenState extends State<AvatarScreen>
                                     )
                                   : null,
                               child: ClipOval(
-                                child: Image.asset(avatar, fit: BoxFit.cover),
+                                child: Image.asset(
+                                  avatar,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
                           );
@@ -153,28 +152,46 @@ class _AvatarScreenState extends State<AvatarScreen>
                 ),
               ),
 
-              // Botão Próximo
+              // Botões
               Padding(
                 padding: const EdgeInsets.all(20.0),
-                child: SizedBox(
-                  width: 200,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      context.push('/apelido', extra: _selectedAvatar);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFA9DBF4),
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 140,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () => context.pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey[300],
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text("Voltar"),
                       ),
                     ),
-                    child: const Text(
-                      "Próximo",
-                      style: TextStyle(fontSize: 18),
+                    const SizedBox(width: 20),
+                    SizedBox(
+                      width: 140,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          context.push('/apelido-filho', extra: _selectedAvatar);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFA9DBF4),
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text("Próximo"),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -183,4 +200,4 @@ class _AvatarScreenState extends State<AvatarScreen>
       ),
     );
   }
-}
+} 

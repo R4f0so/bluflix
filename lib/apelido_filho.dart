@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'app_tema.dart';
 
-class ApelidoScreen extends StatefulWidget {
+class ApelidoFilhoScreen extends StatefulWidget {
   final String selectedAvatar;
-  const ApelidoScreen({super.key, required this.selectedAvatar});
+  const ApelidoFilhoScreen({super.key, required this.selectedAvatar});
 
   @override
-  State<ApelidoScreen> createState() => _ApelidoScreenState();
+  State<ApelidoFilhoScreen> createState() => _ApelidoFilhoScreenState();
 }
 
-class _ApelidoScreenState extends State<ApelidoScreen> {
+class _ApelidoFilhoScreenState extends State<ApelidoFilhoScreen> {
   final TextEditingController _apelidoController = TextEditingController();
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -23,7 +20,7 @@ class _ApelidoScreenState extends State<ApelidoScreen> {
     super.dispose();
   }
 
-  Future<void> _salvarApelido() async {
+  void _proximoPasso() {
     final apelido = _apelidoController.text.trim();
 
     if (apelido.isEmpty) {
@@ -33,39 +30,10 @@ class _ApelidoScreenState extends State<ApelidoScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
-
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user != null) {
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'uid': user.uid,
-          'email': user.email,
-          'apelido': apelido,
-          'avatar': widget.selectedAvatar,
-          'createdAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-
-        print("Dados salvos no Firestore com sucesso!");
-
-        if (!mounted) return;
-        context.go('/catalogo');
-      }
-    } catch (e) {
-      print("Erro ao salvar dados: $e");
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao salvar: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+    // Passa avatar e apelido para a próxima tela (interesses)
+    // Por enquanto, só volta para adicionar-perfis
+    context.pop();
+    context.pop();
   }
 
   @override
@@ -117,7 +85,7 @@ class _ApelidoScreenState extends State<ApelidoScreen> {
                 const SizedBox(height: 30),
 
                 Text(
-                  "Digite seu apelido",
+                  "Digite o apelido",
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -134,7 +102,7 @@ class _ApelidoScreenState extends State<ApelidoScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(color: appTema.textColor, fontSize: 18),
                     decoration: InputDecoration(
-                      hintText: "Seu apelido",
+                      hintText: "Apelido do familiar",
                       hintStyle: TextStyle(
                         color: appTema.textColor.withValues(alpha: 0.5),
                       ),
@@ -160,7 +128,7 @@ class _ApelidoScreenState extends State<ApelidoScreen> {
                       width: 140,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : () => context.pop(),
+                        onPressed: () => context.pop(),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.grey[300],
                           foregroundColor: Colors.black,
@@ -176,7 +144,7 @@ class _ApelidoScreenState extends State<ApelidoScreen> {
                       width: 140,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _salvarApelido,
+                        onPressed: _proximoPasso,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFA9DBF4),
                           foregroundColor: Colors.black,
@@ -184,16 +152,7 @@ class _ApelidoScreenState extends State<ApelidoScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  color: Colors.black,
-                                  strokeWidth: 2.5,
-                                ),
-                              )
-                            : const Text("Prosseguir"),
+                        child: const Text("Próximo"),
                       ),
                     ),
                   ],

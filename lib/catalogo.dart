@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'app_tema.dart';
 
 class CatalogoScreen extends StatefulWidget {
   const CatalogoScreen({super.key});
@@ -14,7 +16,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   String _userName = "";
   String _userAvatar = "";
   bool _isLoading = true;
-  bool _isDarkMode = false; // ✅ Controla o tema
 
   @override
   void initState() {
@@ -45,29 +46,181 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     }
   }
 
+  void _mostrarMenuPerfil() {
+    final appTema = Provider.of<AppTema>(context, listen: false);
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (BuildContext context) {
+        return Dialog(
+          alignment: Alignment.topRight,
+          insetPadding: const EdgeInsets.only(top: 70, right: 20),
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: 280,
+            decoration: BoxDecoration(
+              color: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: appTema.isDarkMode
+                        ? Colors.grey[850]
+                        : Colors.grey[100],
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundImage: AssetImage(_userAvatar),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _userName,
+                              style: TextStyle(
+                                color: appTema.textColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Perfil Principal',
+                              style: TextStyle(
+                                color: appTema.textSecondaryColor,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                _buildMenuItem(
+                  icon: Icons.people_outline,
+                  label: 'Mudar Perfil',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/mudar-perfil');
+                  },
+                ),
+                _buildMenuItem(
+                  icon: Icons.person_add_outlined,
+                  label: 'Adicionar Familiar',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/adicionar-perfis');
+                  },
+                ),
+                _buildMenuItem(
+                  icon: Icons.settings_outlined,
+                  label: 'Configurações',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Em desenvolvimento...'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+
+                const Divider(height: 1),
+
+                _buildMenuItem(
+                  icon: Icons.logout,
+                  label: 'Sair',
+                  isDestructive: true,
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    _fazerLogout();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String label,
+    required bool isDarkMode,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    final color = isDestructive
+        ? Colors.red
+        : (isDarkMode ? Colors.white : Colors.black);
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(width: 14),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _fazerLogout() async {
+    final appTema = Provider.of<AppTema>(context, listen: false);
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.white,
-        title: Text(
-          'Sair',
-          style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black),
-        ),
+        backgroundColor: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
+        title: Text('Sair', style: TextStyle(color: appTema.textColor)),
         content: Text(
           'Deseja realmente sair da sua conta?',
-          style: TextStyle(
-            color: _isDarkMode ? Colors.white70 : Colors.black87,
-          ),
+          style: TextStyle(color: appTema.textSecondaryColor),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(
               'Cancelar',
-              style: TextStyle(
-                color: _isDarkMode ? Colors.white70 : Colors.black54,
-              ),
+              style: TextStyle(color: appTema.textSecondaryColor),
             ),
           ),
           TextButton(
@@ -84,27 +237,13 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     }
   }
 
-  // ✅ Função para alternar o tema
-  void _toggleTheme() {
-    setState(() {
-      _isDarkMode = !_isDarkMode;
-    });
-  }
-
-  // ✅ Função para obter as cores do tema atual
-  Color get _backgroundColor => _isDarkMode ? Colors.black : Colors.white;
-  Color get _textColor => _isDarkMode ? Colors.white : Colors.black;
-  Color get _textSecondaryColor =>
-      _isDarkMode ? Colors.white70 : Colors.black54;
-  String get _backgroundImage => _isDarkMode
-      ? 'assets/night_background.png'
-      : 'assets/morning_background.png';
-
   @override
   Widget build(BuildContext context) {
+    final appTema = Provider.of<AppTema>(context);
+
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: _backgroundColor,
+        backgroundColor: appTema.backgroundColor,
         body: Center(
           child: CircularProgressIndicator(color: const Color(0xFFA9DBF4)),
         ),
@@ -117,13 +256,12 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         height: double.infinity,
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage(_backgroundImage), // ✅ Background dinâmico
+            image: AssetImage(appTema.backgroundImage),
             fit: BoxFit.cover,
           ),
         ),
         child: CustomScrollView(
           slivers: [
-            // ✅ App Bar com logo, botão de tema e avatar
             SliverAppBar(
               floating: true,
               backgroundColor: Colors.transparent,
@@ -133,9 +271,8 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               ),
               centerTitle: false,
               actions: [
-                // ✅ Botão de Tema (Sol/Lua)
                 IconButton(
-                  onPressed: _toggleTheme,
+                  onPressed: () => appTema.toggleTheme(),
                   icon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     transitionBuilder: (child, animation) {
@@ -145,19 +282,20 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       );
                     },
                     child: Icon(
-                      _isDarkMode ? Icons.nightlight_round : Icons.wb_sunny,
-                      key: ValueKey(_isDarkMode),
-                      color: _isDarkMode ? Colors.amber : Colors.orange,
+                      appTema.isDarkMode
+                          ? Icons.nightlight_round
+                          : Icons.wb_sunny,
+                      key: ValueKey(appTema.isDarkMode),
+                      color: appTema.isDarkMode ? Colors.amber : Colors.orange,
                       size: 28,
                     ),
                   ),
-                  tooltip: _isDarkMode ? 'Modo Claro' : 'Modo Escuro',
+                  tooltip: appTema.isDarkMode ? 'Modo Claro' : 'Modo Escuro',
                 ),
                 const SizedBox(width: 8),
 
-                // Avatar do usuário
                 GestureDetector(
-                  onTap: _fazerLogout,
+                  onTap: _mostrarMenuPerfil,
                   child: Padding(
                     padding: const EdgeInsets.only(right: 16.0),
                     child: CircleAvatar(
@@ -169,47 +307,35 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               ],
             ),
 
-            // Conteúdo principal
             SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Mensagem de boas-vindas
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Text(
                       'Olá, $_userName!',
                       style: TextStyle(
-                        color: _textColor,
+                        color: appTema.textColor,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
 
-                  // Filme em Destaque
                   _buildFilmeDestaque(),
-
                   const SizedBox(height: 24),
-
-                  // Seção: Populares
-                  _buildSecaoFilmes('Populares no Bluflix', _filmesPopulares),
-
+                  _buildSecaoFilmes(
+                    'Populares no Bluflix',
+                    _filmesPopulares,
+                    appTema,
+                  ),
                   const SizedBox(height: 24),
-
-                  // Seção: Ação
-                  _buildSecaoFilmes('Filmes de Ação', _filmesAcao),
-
+                  _buildSecaoFilmes('Filmes de Ação', _filmesAcao, appTema),
                   const SizedBox(height: 24),
-
-                  // Seção: Comédia
-                  _buildSecaoFilmes('Comédias', _filmesComedia),
-
+                  _buildSecaoFilmes('Comédias', _filmesComedia, appTema),
                   const SizedBox(height: 24),
-
-                  // Seção: Drama
-                  _buildSecaoFilmes('Dramas', _filmesDrama),
-
+                  _buildSecaoFilmes('Dramas', _filmesDrama, appTema),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -220,7 +346,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     );
   }
 
-  // Widget do filme em destaque (banner grande)
   Widget _buildFilmeDestaque() {
     final filme = _filmesPopulares[0];
     return Container(
@@ -271,9 +396,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               Row(
                 children: [
                   ElevatedButton.icon(
-                    onPressed: () {
-                      // Ação de assistir
-                    },
+                    onPressed: () {},
                     icon: const Icon(Icons.play_arrow, color: Colors.black),
                     label: const Text(
                       'Assistir',
@@ -314,8 +437,11 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     );
   }
 
-  // Widget para seção de filmes (lista horizontal)
-  Widget _buildSecaoFilmes(String titulo, List<Map<String, String>> filmes) {
+  Widget _buildSecaoFilmes(
+    String titulo,
+    List<Map<String, String>> filmes,
+    AppTema appTema,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -324,7 +450,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
           child: Text(
             titulo,
             style: TextStyle(
-              color: _textColor,
+              color: appTema.textColor,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
@@ -346,7 +472,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     );
   }
 
-  // Widget de card individual do filme
   Widget _buildCardFilme(Map<String, String> filme) {
     return GestureDetector(
       onTap: () {
@@ -358,7 +483,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Capa do filme
             Container(
               height: 160,
               decoration: BoxDecoration(
@@ -382,11 +506,12 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     );
   }
 
-  // Mostrar detalhes do filme em um modal
   void _mostrarDetalhesFilme(Map<String, String> filme) {
+    final appTema = Provider.of<AppTema>(context, listen: false);
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.grey[100],
+      backgroundColor: appTema.isDarkMode ? Colors.grey[900] : Colors.grey[100],
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -405,7 +530,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Indicador de arrastar
                     Center(
                       child: Container(
                         width: 40,
@@ -417,8 +541,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-
-                    // Imagem do filme
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Image.network(
@@ -429,25 +551,21 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-
-                    // Título
                     Text(
                       filme['titulo']!,
                       style: TextStyle(
-                        color: _textColor,
+                        color: appTema.textColor,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 12),
-
-                    // Ano e Duração
                     Row(
                       children: [
                         Text(
                           filme['ano']!,
                           style: TextStyle(
-                            color: _textSecondaryColor,
+                            color: appTema.textSecondaryColor,
                             fontSize: 14,
                           ),
                         ),
@@ -455,26 +573,22 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                         Text(
                           filme['duracao']!,
                           style: TextStyle(
-                            color: _textSecondaryColor,
+                            color: appTema.textSecondaryColor,
                             fontSize: 14,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
-
-                    // Descrição
                     Text(
                       filme['descricao']!,
                       style: TextStyle(
-                        color: _textSecondaryColor,
+                        color: appTema.textSecondaryColor,
                         fontSize: 14,
                         height: 1.5,
                       ),
                     ),
                     const SizedBox(height: 24),
-
-                    // Botões de ação
                     Row(
                       children: [
                         Expanded(
@@ -498,12 +612,10 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                         ),
                         const SizedBox(width: 12),
                         IconButton(
-                          onPressed: () {
-                            // Adicionar à lista
-                          },
-                          icon: Icon(Icons.add, color: _textColor),
+                          onPressed: () {},
+                          icon: Icon(Icons.add, color: appTema.textColor),
                           style: IconButton.styleFrom(
-                            backgroundColor: _isDarkMode
+                            backgroundColor: appTema.isDarkMode
                                 ? Colors.grey[800]
                                 : Colors.grey[300],
                             padding: const EdgeInsets.all(12),
@@ -521,7 +633,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     );
   }
 
-  // Dados mock dos filmes
   final List<Map<String, String>> _filmesPopulares = [
     {
       'titulo': 'Avatar: O Caminho da Água',

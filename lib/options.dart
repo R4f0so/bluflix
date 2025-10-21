@@ -1,39 +1,76 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart'; // necessário para usar context.go
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'app_tema.dart';
 
 class OptionsScreen extends StatelessWidget {
   const OptionsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final appTema = Provider.of<AppTema>(context);
+
     return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage(
-              "assets/morning_background.png",
-            ), // mesmo fundo da Home
+            image: AssetImage(appTema.backgroundImage),
             fit: BoxFit.cover,
           ),
         ),
-        child: Center(
+        child: SafeArea(
           child: Column(
-            mainAxisSize: MainAxisSize.min, // centraliza verticalmente
             children: [
-              Image.asset(
-                "assets/logo.png",
-                width: 200, // tamanho do logo
+              // AppBar
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => appTema.toggleTheme(),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        transitionBuilder: (child, animation) {
+                          return RotationTransition(
+                            turns: animation,
+                            child: FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: Icon(
+                          appTema.isDarkMode
+                              ? Icons.nightlight_round
+                              : Icons.wb_sunny,
+                          key: ValueKey(appTema.isDarkMode),
+                          color: appTema.isDarkMode
+                              ? Colors.amber
+                              : Colors.orange,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 40), // espaço entre logo e botão
-              // Botão de login
+
+              const Spacer(),
+
+              // Logo grande
+              Image.asset("assets/logo.png", width: 250),
+              const SizedBox(height: 50),
+
+              // Botão Entrar
               SizedBox(
                 width: 200,
                 height: 50,
                 child: ElevatedButton(
                   onPressed: () {
-                    context.go('/login'); // go_router substitui Navigator
+                    context.push('/login');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFA9DBF4),
@@ -41,37 +78,40 @@ class OptionsScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    shadowColor: Colors.black.withAlpha(50),
                     elevation: 4,
+                    shadowColor: Colors.black.withValues(alpha: 77 / 255),
                   ),
-                  child: const Text("Login", style: TextStyle(fontSize: 18)),
+                  child: const Text("Entrar", style: TextStyle(fontSize: 18)),
                 ),
               ),
 
-              const SizedBox(height: 16), // espaço entre os botões
-              // Botão de criar conta
+              const SizedBox(height: 20),
+
+              // Botão Cadastrar
               SizedBox(
                 width: 200,
                 height: 50,
                 child: ElevatedButton(
                   onPressed: () {
-                    context.go('/cadastro'); // go_router substitui Navigator
+                    context.push('/cadastro');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFA9DBF4),
                     foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    shadowColor: Colors.black.withAlpha(50),
                     elevation: 4,
+                    shadowColor: Colors.black.withValues(alpha: 77 / 255),
                   ),
                   child: const Text(
-                    "Criar conta",
+                    "Cadastrar",
                     style: TextStyle(fontSize: 18),
                   ),
                 ),
               ),
+
+              const Spacer(),
             ],
           ),
         ),

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'app_tema.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,7 +33,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        // 1. Faz o login no Firebase Auth
         UserCredential userCredential = await FirebaseAuth.instance
             .signInWithEmailAndPassword(
               email: _emailController.text.trim(),
@@ -42,12 +43,10 @@ class _LoginScreenState extends State<LoginScreen> {
           "Login realizado com sucesso! Usuário: ${userCredential.user?.email}",
         );
 
-        // 2. Verifica se o usuário completou o perfil (apelido e avatar)
         if (!mounted) return;
 
         final user = userCredential.user;
         if (user != null) {
-          // Busca o documento do usuário no Firestore
           final userDoc = await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
@@ -55,9 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
           if (!mounted) return;
 
-          // Verifica se o documento existe
           if (!userDoc.exists) {
-            // Se não existe, cria um documento básico e redireciona para avatar
             await FirebaseFirestore.instance
                 .collection('users')
                 .doc(user.uid)
@@ -75,18 +72,14 @@ class _LoginScreenState extends State<LoginScreen> {
             return;
           }
 
-          // Pega os dados do usuário
           final userData = userDoc.data();
 
-          // Verifica se apelido e avatar foram preenchidos
           if (userData?['apelido'] == null || userData?['avatar'] == null) {
-            // Perfil incompleto - redireciona para escolher avatar
             print("Perfil incompleto. Redirecionando para /avatar");
             context.go('/avatar');
           } else {
-            // ✅ CORREÇÃO: Perfil completo - vai para CATÁLOGO
             print("Perfil completo! Redirecionando para /catalogo");
-            context.go('/catalogo'); // ✅ MUDANÇA AQUI
+            context.go('/catalogo');
           }
         }
       } on FirebaseAuthException catch (e) {
@@ -152,125 +145,162 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appTema = Provider.of<AppTema>(context);
+
     return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage("assets/morning_background.png"),
+            image: AssetImage(appTema.backgroundImage),
             fit: BoxFit.cover,
           ),
         ),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset("assets/logo.png", width: 200),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "Faça login na sua conta",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-
-                  // Campo E-mail
-                  _buildTextField(
-                    controller: _emailController,
-                    hint: "E-mail",
-                    validator: _validarEmail,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Campo Senha
-                  _buildTextField(
-                    controller: _senhaController,
-                    hint: "Senha",
-                    obscure: _obscurePassword,
-                    suffixIcon: IconButton(
+        child: SafeArea(
+          child: Column(
+            children: [
+              // AppBar
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Image.asset("assets/logo.png", height: 40),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => appTema.toggleTheme(),
                       icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                    validator: _validarSenha,
-                  ),
-                  const SizedBox(height: 30),
-
-                  // Botão Entrar
-                  SizedBox(
-                    width: 200,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _login,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFA9DBF4),
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 4,
-                        shadowColor: Colors.black.withValues(alpha: 77 / 255),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.black,
-                                strokeWidth: 2.5,
-                              ),
-                            )
-                          : const Text(
-                              "Entrar",
-                              style: TextStyle(fontSize: 18),
-                            ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Botão Voltar
-                  SizedBox(
-                    width: 200,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () {
-                              context.go('/options');
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFA9DBF4),
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 4,
-                        shadowColor: Colors.black.withValues(alpha: 77 / 255),
-                      ),
-                      child: const Text(
-                        "Voltar",
-                        style: TextStyle(fontSize: 18),
+                        appTema.isDarkMode
+                            ? Icons.nightlight_round
+                            : Icons.wb_sunny,
+                        color: appTema.isDarkMode
+                            ? Colors.amber
+                            : Colors.orange,
+                        size: 28,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset("assets/logo.png", width: 200),
+                          const SizedBox(height: 16),
+                          Text(
+                            "Faça login na sua conta",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: appTema.textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 30),
+
+                          // Campo E-mail
+                          _buildTextField(
+                            controller: _emailController,
+                            hint: "E-mail",
+                            validator: _validarEmail,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Campo Senha
+                          _buildTextField(
+                            controller: _senhaController,
+                            hint: "Senha",
+                            obscure: _obscurePassword,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                            validator: _validarSenha,
+                          ),
+                          const SizedBox(height: 30),
+
+                          // Botão Entrar
+                          SizedBox(
+                            width: 200,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _login,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFA9DBF4),
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 4,
+                                shadowColor: Colors.black.withValues(
+                                  alpha: 77 / 255,
+                                ),
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.black,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                  : const Text(
+                                      "Entrar",
+                                      style: TextStyle(fontSize: 18),
+                                    ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Botão Voltar
+                          SizedBox(
+                            width: 200,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _isLoading
+                                  ? null
+                                  : () {
+                                      context.go('/options');
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFA9DBF4),
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 4,
+                                shadowColor: Colors.black.withValues(
+                                  alpha: 77 / 255,
+                                ),
+                              ),
+                              child: const Text(
+                                "Voltar",
+                                style: TextStyle(fontSize: 18),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -1,9 +1,9 @@
 import 'dart:ui';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'app_tema.dart';
 
 class CadastroScreen extends StatefulWidget {
   const CadastroScreen({super.key});
@@ -21,6 +21,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
       TextEditingController();
 
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   bool _isLoading = false;
 
   @override
@@ -31,52 +32,51 @@ class _CadastroScreenState extends State<CadastroScreen> {
     super.dispose();
   }
 
-  Future<void> _criarConta() async {
+  Future<void> _cadastrar() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        UserCredential cred = await FirebaseAuth.instance
+        UserCredential userCredential = await FirebaseAuth.instance
             .createUserWithEmailAndPassword(
               email: _emailController.text.trim(),
               password: _senhaController.text.trim(),
             );
 
-        final user = cred.user;
-        if (user != null) {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .set({
-                'uid': user.uid,
-                'email': user.email,
-                'apelido': null,
-                'avatar': null,
-                'createdAt': FieldValue.serverTimestamp(),
-              });
+        print(
+          "Cadastro realizado com sucesso! Usuário: ${userCredential.user?.email}",
+        );
 
-          if (!mounted) return;
-          context.go('/avatar');
-        }
+        if (!mounted) return;
+        context.go('/avatar');
       } on FirebaseAuthException catch (e) {
         String mensagem;
         if (e.code == 'weak-password') {
-          mensagem = 'A senha é muito fraca (mínimo 6 caracteres).';
+          mensagem = 'A senha é muito fraca. Use pelo menos 6 caracteres.';
         } else if (e.code == 'email-already-in-use') {
-          mensagem = 'Este e-mail já está em uso.';
+          mensagem = 'Este e-mail já está cadastrado.';
+        } else if (e.code == 'invalid-email') {
+          mensagem = 'E-mail inválido.';
         } else {
-          mensagem = 'Erro ao criar conta: ${e.message}';
+          mensagem = 'Erro ao cadastrar: ${e.message}';
         }
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(mensagem)));
-        }
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(mensagem),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erro inesperado: ${e.toString()}')),
-          );
-        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro inesperado: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
       } finally {
         if (mounted) {
           setState(() => _isLoading = false);
@@ -94,6 +94,212 @@ class _CadastroScreenState extends State<CadastroScreen> {
       return "E-mail inválido";
     }
     return null;
+  }
+
+  String? _validarSenha(String? valor) {
+    if (valor == null || valor.trim().isEmpty) {
+      return "Senha é obrigatória";
+    }
+    if (valor.length < 6) {
+      return "Senha deve ter pelo menos 6 caracteres";
+    }
+    return null;
+  }
+
+  String? _validarConfirmarSenha(String? valor) {
+    if (valor == null || valor.trim().isEmpty) {
+      return "Confirmação de senha é obrigatória";
+    }
+    if (valor != _senhaController.text) {
+      return "As senhas não coincidem";
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appTema = Provider.of<AppTema>(context);
+
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(appTema.backgroundImage),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // AppBar
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Image.asset("assets/logo.png", height: 40),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => appTema.toggleTheme(),
+                      icon: Icon(
+                        appTema.isDarkMode
+                            ? Icons.nightlight_round
+                            : Icons.wb_sunny,
+                        color: appTema.isDarkMode
+                            ? Colors.amber
+                            : Colors.orange,
+                        size: 28,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset("assets/logo.png", width: 200),
+                          const SizedBox(height: 16),
+                          Text(
+                            "Crie sua conta",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: appTema.textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 30),
+
+                          // Campo E-mail
+                          _buildTextField(
+                            controller: _emailController,
+                            hint: "E-mail",
+                            validator: _validarEmail,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Campo Senha
+                          _buildTextField(
+                            controller: _senhaController,
+                            hint: "Senha",
+                            obscure: _obscurePassword,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                            validator: _validarSenha,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Campo Confirmar Senha
+                          _buildTextField(
+                            controller: _confirmarSenhaController,
+                            hint: "Confirmar Senha",
+                            obscure: _obscureConfirmPassword,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirmPassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscureConfirmPassword =
+                                      !_obscureConfirmPassword;
+                                });
+                              },
+                            ),
+                            validator: _validarConfirmarSenha,
+                          ),
+                          const SizedBox(height: 30),
+
+                          // Botão Cadastrar
+                          SizedBox(
+                            width: 200,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _cadastrar,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFA9DBF4),
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 4,
+                                shadowColor: Colors.black.withValues(
+                                  alpha: 77 / 255,
+                                ),
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.black,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                  : const Text(
+                                      "Cadastrar",
+                                      style: TextStyle(fontSize: 18),
+                                    ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Botão Voltar
+                          SizedBox(
+                            width: 200,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _isLoading
+                                  ? null
+                                  : () {
+                                      context.go('/options');
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFA9DBF4),
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 4,
+                                shadowColor: Colors.black.withValues(
+                                  alpha: 77 / 255,
+                                ),
+                              ),
+                              child: const Text(
+                                "Voltar",
+                                style: TextStyle(fontSize: 18),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildTextField({
@@ -122,182 +328,6 @@ class _CadastroScreenState extends State<CadastroScreen> {
                 borderSide: BorderSide.none,
               ),
               suffixIcon: suffixIcon,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/morning_background.png"),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset("assets/logo.png", width: 200),
-                  const SizedBox(height: 16),
-
-                  const Text(
-                    "Cadastre sua conta",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-
-                  _buildTextField(
-                    controller: _emailController,
-                    hint: "E-mail",
-                    validator: _validarEmail,
-                  ),
-                  const SizedBox(height: 16),
-
-                  _buildTextField(
-                    controller: _senhaController,
-                    hint: "Senha",
-                    obscure: _obscurePassword,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return "Senha é obrigatória";
-                      }
-                      if (v.trim().length < 6) {
-                        return "A senha deve ter pelo menos 6 caracteres.";
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  _buildTextField(
-                    controller: _confirmarSenhaController,
-                    hint: "Confirmar senha",
-                    obscure: _obscurePassword,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return "Confirme sua senha";
-                      }
-                      if (value.trim() != _senhaController.text.trim()) {
-                        return "As senhas não são iguais";
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 30),
-
-                  SizedBox(
-                    width: 200,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _criarConta,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFA9DBF4),
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 4,
-                        shadowColor: Colors.black.withValues(alpha: 77 / 255),
-                      ),
-                      child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.black)
-                          : const Text(
-                              "Criar conta",
-                              style: TextStyle(fontSize: 18),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  SizedBox(
-                    width: 200,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        context.go('/options');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFA9DBF4),
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 4,
-                        shadowColor: Colors.black.withValues(alpha: 77 / 255),
-                      ),
-                      child: const Text(
-                        "Voltar",
-                        style: TextStyle(fontSize: 18),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: RichText(
-                      textAlign: TextAlign.center,
-                      text: TextSpan(
-                        text: "Ao se cadastrar, você aceita os ",
-                        style: const TextStyle(color: Colors.black),
-                        children: [
-                          TextSpan(
-                            text:
-                                "Termos de Uso e a Política de Privacidade do Bluflix.",
-                            style: const TextStyle(
-                              color: Color(0xFF003366),
-                              decoration: TextDecoration.none,
-                            ),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                print("Termos de Uso clicado");
-                              },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ),
         ),
