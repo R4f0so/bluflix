@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'app_tema.dart';
+import 'perfil_provider.dart';
+import 'widgets/theme_toggle_button.dart';
 
 class CatalogoScreen extends StatefulWidget {
   const CatalogoScreen({super.key});
@@ -26,6 +28,11 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   Future<void> _carregarDadosUsuario() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
+      final perfilProvider = Provider.of<PerfilProvider>(
+        context,
+        listen: false,
+      );
+
       if (user != null) {
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
@@ -33,11 +40,32 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             .get();
 
         if (userDoc.exists) {
-          setState(() {
-            _userName = userDoc.data()?['apelido'] ?? 'Usuário';
-            _userAvatar = userDoc.data()?['avatar'] ?? 'assets/avatar1.png';
-            _isLoading = false;
-          });
+          final data = userDoc.data();
+
+          // Verifica se tem perfil ativo salvo
+          if (perfilProvider.perfilAtivoApelido != null) {
+            setState(() {
+              _userName = perfilProvider.perfilAtivoApelido!;
+              _userAvatar = perfilProvider.perfilAtivoAvatar!;
+              _isLoading = false;
+            });
+          } else {
+            // Se não tem, usa o perfil pai e salva
+            final apelido = data?['apelido'] ?? 'Usuário';
+            final avatar = data?['avatar'] ?? 'assets/avatar1.png';
+
+            await perfilProvider.setPerfilAtivo(
+              apelido: apelido,
+              avatar: avatar,
+              isPai: true,
+            );
+
+            setState(() {
+              _userName = apelido;
+              _userAvatar = avatar;
+              _isLoading = false;
+            });
+          }
         }
       }
     } catch (e) {
@@ -205,6 +233,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
   Future<void> _fazerLogout() async {
     final appTema = Provider.of<AppTema>(context, listen: false);
+    final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -233,6 +262,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
     if (confirm == true) {
       await FirebaseAuth.instance.signOut();
+      await perfilProvider.clearPerfilAtivo();
       if (mounted) context.go('/options');
     }
   }
@@ -271,27 +301,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               ),
               centerTitle: false,
               actions: [
-                IconButton(
-                  onPressed: () => appTema.toggleTheme(),
-                  icon: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    transitionBuilder: (child, animation) {
-                      return RotationTransition(
-                        turns: animation,
-                        child: FadeTransition(opacity: animation, child: child),
-                      );
-                    },
-                    child: Icon(
-                      appTema.isDarkMode
-                          ? Icons.nightlight_round
-                          : Icons.wb_sunny,
-                      key: ValueKey(appTema.isDarkMode),
-                      color: appTema.isDarkMode ? Colors.amber : Colors.orange,
-                      size: 28,
-                    ),
-                  ),
-                  tooltip: appTema.isDarkMode ? 'Modo Claro' : 'Modo Escuro',
-                ),
+                const ThemeToggleButton(),
                 const SizedBox(width: 8),
 
                 GestureDetector(

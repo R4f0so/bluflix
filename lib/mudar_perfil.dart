@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'app_tema.dart';
+import 'perfil_provider.dart';
+import 'widgets/theme_toggle_button.dart';
 
 class MudarPerfilScreen extends StatefulWidget {
   const MudarPerfilScreen({super.key});
@@ -56,17 +58,31 @@ class _MudarPerfilScreenState extends State<MudarPerfilScreen> {
     }
   }
 
-  void _selecionarPerfil(Map<String, dynamic> perfil) {
-    // Por enquanto, apenas fecha a tela e volta para o catálogo
-    // Futuramente, você pode salvar qual perfil está ativo
+  void _selecionarPerfil(Map<String, dynamic> perfil) async {
+    final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
+
+    final apelido = perfil['apelido'] ?? 'Usuário';
+    final avatar = perfil['avatar'] ?? 'assets/avatar1.png';
+    final isPai = perfil['tipo'] == 'pai';
+
+    // Salva o perfil ativo
+    await perfilProvider.setPerfilAtivo(
+      apelido: apelido,
+      avatar: avatar,
+      isPai: isPai,
+    );
+
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Perfil "${perfil['apelido']}" selecionado!'),
+        content: Text('Perfil "$apelido" selecionado!'),
+        backgroundColor: Colors.green,
         duration: const Duration(seconds: 2),
       ),
     );
 
-    // Volta para o catálogo
+    // Volta para o catálogo (vai recarregar com novo perfil)
     context.go('/catalogo');
   }
 
@@ -103,18 +119,7 @@ class _MudarPerfilScreenState extends State<MudarPerfilScreen> {
                   children: [
                     Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    IconButton(
-                      onPressed: () => appTema.toggleTheme(),
-                      icon: Icon(
-                        appTema.isDarkMode
-                            ? Icons.nightlight_round
-                            : Icons.wb_sunny,
-                        color: appTema.isDarkMode
-                            ? Colors.amber
-                            : Colors.orange,
-                        size: 28,
-                      ),
-                    ),
+                    const ThemeToggleButton(),
                     IconButton(
                       onPressed: () => context.pop(),
                       icon: Icon(

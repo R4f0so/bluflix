@@ -1,3 +1,4 @@
+import 'widgets/theme_toggle_button.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -73,18 +74,7 @@ class _AvatarScreenState extends State<AvatarScreen>
                   children: [
                     Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    IconButton(
-                      onPressed: () => appTema.toggleTheme(),
-                      icon: Icon(
-                        appTema.isDarkMode
-                            ? Icons.nightlight_round
-                            : Icons.wb_sunny,
-                        color: appTema.isDarkMode
-                            ? Colors.amber
-                            : Colors.orange,
-                        size: 28,
-                      ),
-                    ),
+                    const ThemeToggleButton(),
                   ],
                 ),
               ),

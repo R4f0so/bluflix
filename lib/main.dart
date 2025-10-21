@@ -3,8 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
-import 'mudar_perfil.dart';
+
 import 'app_tema.dart';
+import 'perfil_provider.dart'; // ✅ ADICIONE
 import 'splash.dart';
 import 'options.dart';
 import 'login.dart';
@@ -15,6 +16,7 @@ import 'catalogo.dart';
 import 'adicionar_perfis.dart';
 import 'avatar_filho.dart';
 import 'apelido_filho.dart';
+import 'mudar_perfil.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,8 +25,11 @@ Future<void> main() async {
   print("Firebase inicializado com sucesso!");
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AppTema(), // ✅
+    MultiProvider( // ✅ MUDANÇA: Múltiplos providers
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppTema()),
+        ChangeNotifierProvider(create: (_) => PerfilProvider()), // ✅ NOVO
+      ],
       child: const BluFlixApp(),
     ),
   );
@@ -80,10 +85,6 @@ class BluFlixApp extends StatelessWidget {
           builder: (context, state) => const AvatarFilhoScreen(),
         ),
         GoRoute(
-          path: '/mudar-perfil',
-          builder: (context, state) => const MudarPerfilScreen(),
-        ),
-        GoRoute(
           path: '/apelido-filho',
           builder: (context, state) {
             final avatar = state.extra as String?;
@@ -91,6 +92,10 @@ class BluFlixApp extends StatelessWidget {
               selectedAvatar: avatar ?? 'assets/avatar1.png',
             );
           },
+        ),
+        GoRoute(
+          path: '/mudar-perfil',
+          builder: (context, state) => const MudarPerfilScreen(),
         ),
       ],
     );

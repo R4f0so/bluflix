@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'app_tema.dart';
+import 'widgets/theme_toggle_button.dart';
 
 class ApelidoFilhoScreen extends StatefulWidget {
   final String selectedAvatar;
@@ -13,6 +16,7 @@ class ApelidoFilhoScreen extends StatefulWidget {
 
 class _ApelidoFilhoScreenState extends State<ApelidoFilhoScreen> {
   final TextEditingController _apelidoController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -20,20 +24,100 @@ class _ApelidoFilhoScreenState extends State<ApelidoFilhoScreen> {
     super.dispose();
   }
 
-  void _proximoPasso() {
+  Future<void> _salvarPerfilFilho() async {
     final apelido = _apelidoController.text.trim();
 
     if (apelido.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, insira um apelido')),
+        const SnackBar(
+          content: Text('Por favor, insira um apelido'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
-    // Passa avatar e apelido para a próxima tela (interesses)
-    // Por enquanto, só volta para adicionar-perfis
-    context.pop();
-    context.pop();
+    setState(() => _isLoading = true);
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        // Busca o documento do usuário
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        // Pega a lista atual de perfis filhos (ou cria uma vazia)
+        List<dynamic> perfisFilhos = [];
+        if (userDoc.exists) {
+          perfisFilhos = userDoc.data()?['perfisFilhos'] ?? [];
+        }
+
+        // Verifica se já tem 4 perfis
+        if (perfisFilhos.length >= 4) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Limite de 4 perfis atingido!'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() => _isLoading = false);
+          return;
+        }
+
+        // Cria o novo perfil filho
+        final novoPerfilFilho = {
+          'apelido': apelido,
+          'avatar': widget.selectedAvatar,
+          'interesses': [],
+          'criadoEm': Timestamp.now(),
+        };
+
+        // Adiciona o novo perfil à lista
+        perfisFilhos.add(novoPerfilFilho);
+
+        // Atualiza o Firestore
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({'perfisFilhos': perfisFilhos});
+
+        print("✅ Perfil filho salvo com sucesso!");
+
+        if (!mounted) return;
+
+        // Mostra mensagem de sucesso
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Perfil "$apelido" criado com sucesso!'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Volta para a tela de adicionar perfis
+        context.pop(); // Volta da tela de apelido
+        context.pop(); // Volta da tela de avatar
+      }
+    } catch (e) {
+      print("❌ Erro ao salvar perfil filho: $e");
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao salvar: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -60,18 +144,7 @@ class _ApelidoFilhoScreenState extends State<ApelidoFilhoScreen> {
                   children: [
                     Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    IconButton(
-                      onPressed: () => appTema.toggleTheme(),
-                      icon: Icon(
-                        appTema.isDarkMode
-                            ? Icons.nightlight_round
-                            : Icons.wb_sunny,
-                        color: appTema.isDarkMode
-                            ? Colors.amber
-                            : Colors.orange,
-                        size: 28,
-                      ),
-                    ),
+                    const ThemeToggleButton(),
                   ],
                 ),
 
@@ -100,6 +173,7 @@ class _ApelidoFilhoScreenState extends State<ApelidoFilhoScreen> {
                   child: TextField(
                     controller: _apelidoController,
                     textAlign: TextAlign.center,
+                    enabled: !_isLoading,
                     style: TextStyle(color: appTema.textColor, fontSize: 18),
                     decoration: InputDecoration(
                       hintText: "Apelido do familiar",
@@ -128,7 +202,7 @@ class _ApelidoFilhoScreenState extends State<ApelidoFilhoScreen> {
                       width: 140,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: () => context.pop(),
+                        onPressed: _isLoading ? null : () => context.pop(),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.grey[300],
                           foregroundColor: Colors.black,
@@ -144,7 +218,7 @@ class _ApelidoFilhoScreenState extends State<ApelidoFilhoScreen> {
                       width: 140,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: _proximoPasso,
+                        onPressed: _isLoading ? null : _salvarPerfilFilho,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFA9DBF4),
                           foregroundColor: Colors.black,
@@ -152,7 +226,16 @@ class _ApelidoFilhoScreenState extends State<ApelidoFilhoScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text("Próximo"),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.black,
+                                  strokeWidth: 2.5,
+                                ),
+                              )
+                            : const Text("Salvar"),
                       ),
                     ),
                   ],

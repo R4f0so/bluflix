@@ -1,3 +1,4 @@
+import 'widgets/theme_toggle_button.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -37,9 +38,10 @@ class _AvatarFilhoScreenState extends State<AvatarFilhoScreen>
       duration: const Duration(seconds: 1),
     )..repeat(reverse: true);
 
-    _animation = Tween<double>(begin: 0, end: 20).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0,
+      end: 20,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -72,16 +74,7 @@ class _AvatarFilhoScreenState extends State<AvatarFilhoScreen>
                   children: [
                     Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    IconButton(
-                      onPressed: () => appTema.toggleTheme(),
-                      icon: Icon(
-                        appTema.isDarkMode
-                            ? Icons.nightlight_round
-                            : Icons.wb_sunny,
-                        color: appTema.isDarkMode ? Colors.amber : Colors.orange,
-                        size: 28,
-                      ),
-                    ),
+                    const ThemeToggleButton(), 
                   ],
                 ),
               ),
@@ -126,8 +119,9 @@ class _AvatarFilhoScreenState extends State<AvatarFilhoScreen>
                           return Transform.translate(
                             offset: Offset(0, offset),
                             child: Container(
-                              padding:
-                                  isSelected ? const EdgeInsets.all(4) : null,
+                              padding: isSelected
+                                  ? const EdgeInsets.all(4)
+                                  : null,
                               decoration: isSelected
                                   ? BoxDecoration(
                                       shape: BoxShape.circle,
@@ -138,10 +132,7 @@ class _AvatarFilhoScreenState extends State<AvatarFilhoScreen>
                                     )
                                   : null,
                               child: ClipOval(
-                                child: Image.asset(
-                                  avatar,
-                                  fit: BoxFit.cover,
-                                ),
+                                child: Image.asset(avatar, fit: BoxFit.cover),
                               ),
                             ),
                           );
@@ -179,7 +170,10 @@ class _AvatarFilhoScreenState extends State<AvatarFilhoScreen>
                       height: 50,
                       child: ElevatedButton(
                         onPressed: () {
-                          context.push('/apelido-filho', extra: _selectedAvatar);
+                          context.push(
+                            '/apelido-filho',
+                            extra: _selectedAvatar,
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFA9DBF4),
@@ -200,4 +194,4 @@ class _AvatarFilhoScreenState extends State<AvatarFilhoScreen>
       ),
     );
   }
-} 
+}

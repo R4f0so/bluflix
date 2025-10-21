@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'app_tema.dart';
+import 'widgets/theme_toggle_button.dart'; // ✅ Import
 
 class OptionsScreen extends StatelessWidget {
   const OptionsScreen({super.key});
@@ -28,43 +29,18 @@ class OptionsScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
+                    Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    GestureDetector(
-                      onTap: () => appTema.toggleTheme(),
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        transitionBuilder: (child, animation) {
-                          return RotationTransition(
-                            turns: animation,
-                            child: FadeTransition(
-                              opacity: animation,
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: Icon(
-                          appTema.isDarkMode
-                              ? Icons.nightlight_round
-                              : Icons.wb_sunny,
-                          key: ValueKey(appTema.isDarkMode),
-                          color: appTema.isDarkMode
-                              ? Colors.amber
-                              : Colors.orange,
-                          size: 28,
-                        ),
-                      ),
-                    ),
+                    const ThemeToggleButton(), // ✅ Uso do componente
                   ],
                 ),
               ),
 
               const Spacer(),
 
-              // Logo grande
               Image.asset("assets/logo.png", width: 250),
               const SizedBox(height: 50),
 
-              // Botão Entrar
               SizedBox(
                 width: 200,
                 height: 50,
@@ -87,7 +63,6 @@ class OptionsScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // Botão Cadastrar
               SizedBox(
                 width: 200,
                 height: 50,

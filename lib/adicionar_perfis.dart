@@ -1,3 +1,4 @@
+import 'widgets/theme_toggle_button.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -77,25 +78,13 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // AppBar customizada
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
                     Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    IconButton(
-                      onPressed: () => appTema.toggleTheme(),
-                      icon: Icon(
-                        appTema.isDarkMode
-                            ? Icons.nightlight_round
-                            : Icons.wb_sunny,
-                        color: appTema.isDarkMode
-                            ? Colors.amber
-                            : Colors.orange,
-                        size: 28,
-                      ),
-                    ),
+                    const ThemeToggleButton(),
                     IconButton(
                       onPressed: () => context.pop(),
                       icon: Icon(
