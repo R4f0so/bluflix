@@ -168,8 +168,8 @@ class TemaConfigScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     isDark
-                        ? 'Interface escura para ambientes com pouca luz'
-                        : 'Interface clara para melhor visualização',
+                        ? 'Interface escura para conforto visual e menor distração.'
+                        : 'Interface clara para uma experiência mais nítida e energizante',
                     style: TextStyle(
                       color: isDark ? Colors.white70 : Colors.black54,
                       fontSize: 13,
