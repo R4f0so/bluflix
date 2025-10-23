@@ -15,8 +15,6 @@ class CatalogoScreen extends StatefulWidget {
 }
 
 class _CatalogoScreenState extends State<CatalogoScreen> {
-  String _userName = "";
-  String _userAvatar = "";
   bool _isLoading = true;
 
   @override
@@ -26,6 +24,8 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   }
 
   Future<void> _carregarDadosUsuario() async {
+    setState(() => _isLoading = true);
+
     try {
       final user = FirebaseAuth.instance.currentUser;
       final perfilProvider = Provider.of<PerfilProvider>(
@@ -42,15 +42,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         if (userDoc.exists) {
           final data = userDoc.data();
 
-          // Verifica se tem perfil ativo salvo
-          if (perfilProvider.perfilAtivoApelido != null) {
-            setState(() {
-              _userName = perfilProvider.perfilAtivoApelido!;
-              _userAvatar = perfilProvider.perfilAtivoAvatar!;
-              _isLoading = false;
-            });
-          } else {
-            // Se não tem, usa o perfil pai e salva
+          if (perfilProvider.perfilAtivoApelido == null) {
             final apelido = data?['apelido'] ?? 'Usuário';
             final avatar = data?['avatar'] ?? 'assets/avatar1.png';
 
@@ -59,23 +51,23 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               avatar: avatar,
               isPai: true,
             );
-
-            setState(() {
-              _userName = apelido;
-              _userAvatar = avatar;
-              _isLoading = false;
-            });
           }
         }
       }
     } catch (e) {
-      print('Erro ao carregar dados do usuário: $e');
+      print('❌ Erro ao carregar dados do usuário: $e');
+    } finally {
       setState(() => _isLoading = false);
     }
   }
 
   void _mostrarMenuPerfil() {
     final appTema = Provider.of<AppTema>(context, listen: false);
+
+    // Pega do provider na hora de abrir o menu
+    final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
+    final userName = perfilProvider.perfilAtivoApelido ?? 'Usuário';
+    final userAvatar = perfilProvider.perfilAtivoAvatar ?? 'assets/avatar1.png';
 
     showDialog(
       context: context,
@@ -116,7 +108,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                     children: [
                       CircleAvatar(
                         radius: 28,
-                        backgroundImage: AssetImage(_userAvatar),
+                        backgroundImage: AssetImage(userAvatar),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -124,7 +116,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _userName,
+                              userName,
                               style: TextStyle(
                                 color: appTema.textColor,
                                 fontSize: 16,
@@ -132,7 +124,9 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                               ),
                             ),
                             Text(
-                              'Perfil Principal',
+                              perfilProvider.isPerfilPai
+                                  ? 'Perfil Principal'
+                                  : 'Perfil Filho',
                               style: TextStyle(
                                 color: appTema.textSecondaryColor,
                                 fontSize: 12,
@@ -146,6 +140,16 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 ),
 
                 _buildMenuItem(
+                  icon: Icons.account_circle_outlined,
+                  label: 'Mudar Avatar',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/mudar-avatar');
+                  },
+                ),
+
+                _buildMenuItem(
                   icon: Icons.people_outline,
                   label: 'Mudar Perfil',
                   isDarkMode: appTema.isDarkMode,
@@ -156,7 +160,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 ),
                 _buildMenuItem(
                   icon: Icons.person_add_outlined,
-                  label: 'Adicionar Familiar',
+                  label: 'Adicionar/Remover Familiar',
                   isDarkMode: appTema.isDarkMode,
                   onTap: () {
                     Navigator.pop(context);
@@ -169,12 +173,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   isDarkMode: appTema.isDarkMode,
                   onTap: () {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Em desenvolvimento...'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                    context.push('/perfil-configs'); // ✅ Mudança aqui
                   },
                 ),
 
@@ -271,6 +270,11 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   Widget build(BuildContext context) {
     final appTema = Provider.of<AppTema>(context);
 
+    // ✅ MUDANÇA PRINCIPAL: Sempre pegar do provider
+    final perfilProvider = Provider.of<PerfilProvider>(context);
+    final userName = perfilProvider.perfilAtivoApelido ?? 'Usuário';
+    final userAvatar = perfilProvider.perfilAtivoAvatar ?? 'assets/avatar1.png';
+
     if (_isLoading) {
       return Scaffold(
         backgroundColor: appTema.backgroundColor,
@@ -310,7 +314,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                     padding: const EdgeInsets.only(right: 16.0),
                     child: CircleAvatar(
                       radius: 20,
-                      backgroundImage: AssetImage(_userAvatar),
+                      backgroundImage: AssetImage(userAvatar),
                     ),
                   ),
                 ),
@@ -324,7 +328,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Text(
-                      'Olá, $_userName!',
+                      'Olá, $userName!',
                       style: TextStyle(
                         color: appTema.textColor,
                         fontSize: 24,

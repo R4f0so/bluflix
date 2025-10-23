@@ -16,7 +16,7 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
 
     // Timer de 10 segundos para ir para a tela de opções
-    Timer(const Duration(seconds: 10), () {
+    Timer(const Duration(seconds: 8), () {
       if (mounted) {
         context.go('/options');
       }

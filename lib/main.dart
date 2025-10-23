@@ -3,9 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
-
 import 'app_tema.dart';
-import 'perfil_provider.dart'; // ✅ ADICIONE
+import 'perfil_provider.dart';
 import 'splash.dart';
 import 'options.dart';
 import 'login.dart';
@@ -17,6 +16,10 @@ import 'adicionar_perfis.dart';
 import 'avatar_filho.dart';
 import 'apelido_filho.dart';
 import 'mudar_perfil.dart';
+import 'perfil_configs.dart';
+import 'seguranca_config.dart';
+import 'mudar_avatar.dart';
+import 'tema_config.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,10 +28,11 @@ Future<void> main() async {
   print("Firebase inicializado com sucesso!");
 
   runApp(
-    MultiProvider( // ✅ MUDANÇA: Múltiplos providers
+    MultiProvider(
+      // Múltiplos providers
       providers: [
         ChangeNotifierProvider(create: (_) => AppTema()),
-        ChangeNotifierProvider(create: (_) => PerfilProvider()), // ✅ NOVO
+        ChangeNotifierProvider(create: (_) => PerfilProvider()),
       ],
       child: const BluFlixApp(),
     ),
@@ -96,6 +100,22 @@ class BluFlixApp extends StatelessWidget {
         GoRoute(
           path: '/mudar-perfil',
           builder: (context, state) => const MudarPerfilScreen(),
+        ),
+        GoRoute(
+          path: '/perfil-configs',
+          builder: (context, state) => const PerfilConfigsScreen(),
+        ),
+        GoRoute(
+          path: '/seguranca-config',
+          builder: (context, state) => const SegurancaConfigScreen(),
+        ),
+        GoRoute(
+          path: '/mudar-avatar',
+          builder: (context, state) => const MudarAvatarScreen(),
+        ),
+        GoRoute(
+          path: '/tema-config',
+          builder: (context, state) => const TemaConfigScreen(),
         ),
       ],
     );

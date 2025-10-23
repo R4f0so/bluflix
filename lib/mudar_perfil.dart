@@ -59,11 +59,18 @@ class _MudarPerfilScreenState extends State<MudarPerfilScreen> {
   }
 
   void _selecionarPerfil(Map<String, dynamic> perfil) async {
+    print("🔵 _selecionarPerfil chamado");
+    print("   Perfil selecionado: ${perfil['apelido']}");
+
     final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
 
     final apelido = perfil['apelido'] ?? 'Usuário';
     final avatar = perfil['avatar'] ?? 'assets/avatar1.png';
     final isPai = perfil['tipo'] == 'pai';
+
+    print("   Apelido: $apelido");
+    print("   Avatar: $avatar");
+    print("   IsPai: $isPai");
 
     // Salva o perfil ativo
     await perfilProvider.setPerfilAtivo(
@@ -71,6 +78,8 @@ class _MudarPerfilScreenState extends State<MudarPerfilScreen> {
       avatar: avatar,
       isPai: isPai,
     );
+
+    print("✅ Perfil salvo, voltando para catálogo");
 
     if (!mounted) return;
 
@@ -82,7 +91,7 @@ class _MudarPerfilScreenState extends State<MudarPerfilScreen> {
       ),
     );
 
-    // Volta para o catálogo (vai recarregar com novo perfil)
+    // Volta para o catálogo
     context.go('/catalogo');
   }
 

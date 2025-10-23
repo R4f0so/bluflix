@@ -25,6 +25,11 @@ class PerfilProvider extends ChangeNotifier {
     required String avatar,
     required bool isPai,
   }) async {
+    print("🔵 setPerfilAtivo chamado:");
+    print("   Apelido: $apelido");
+    print("   Avatar: $avatar");
+    print("   IsPai: $isPai");
+
     _perfilAtivoApelido = apelido;
     _perfilAtivoAvatar = avatar;
     _isPerfilPai = isPai;
@@ -34,6 +39,7 @@ class PerfilProvider extends ChangeNotifier {
     await prefs.setString('perfilAtivoAvatar', avatar);
     await prefs.setBool('isPerfilPai', isPai);
 
+    print("✅ Perfil salvo no SharedPreferences");
     notifyListeners();
   }
 
