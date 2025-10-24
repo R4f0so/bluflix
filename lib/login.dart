@@ -1,11 +1,12 @@
-import 'widgets/theme_toggle_button.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'app_tema.dart';
+import 'widgets/theme_toggle_button.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -45,6 +46,27 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
         if (!mounted) return;
+
+        // ✅ DEBUG: Verifica tema após login
+        print("════════════════════════════════");
+        print("✅ LOGIN BEM-SUCEDIDO");
+
+        final appTema = Provider.of<AppTema>(context, listen: false);
+        print(
+          "   Tema ANTES de carregar do Firestore: ${appTema.isDarkMode ? 'Escuro' : 'Claro'}",
+        );
+
+        // ✅ CARREGA TEMA DO FIRESTORE IMEDIATAMENTE
+        await appTema.loadThemeFromFirestore();
+
+        print(
+          "   Tema DEPOIS de carregar do Firestore: ${appTema.isDarkMode ? 'Escuro' : 'Claro'}",
+        );
+
+        final prefs = await SharedPreferences.getInstance();
+        final temaNoStorage = prefs.getBool('isDarkMode');
+        print("   Tema no SharedPreferences: $temaNoStorage");
+        print("════════════════════════════════");
 
         final user = userCredential.user;
         if (user != null) {
@@ -161,13 +183,14 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SafeArea(
           child: Column(
             children: [
+              // AppBar
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
                     Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    const ThemeToggleButton(), 
+                    const ThemeToggleButton(),
                   ],
                 ),
               ),

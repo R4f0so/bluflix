@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
+
 import 'app_tema.dart';
 import 'perfil_provider.dart';
 import 'splash.dart';
@@ -27,12 +28,31 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print("Firebase inicializado com sucesso!");
 
+  print("\n════════════════════════════════");
+  print("🚀 INICIANDO APLICATIVO");
+  print("════════════════════════════════\n");
+
+  // Inicializa os providers e carrega dados salvos
+  final appTema = AppTema();
+  final perfilProvider = PerfilProvider();
+
+  // Carrega tema salvo
+  await appTema.loadTheme();
+  
+  print("   Tema carregado no main: ${appTema.isDarkMode ? 'Escuro' : 'Claro'}");
+  
+  // Carrega perfil ativo salvo
+  await perfilProvider.loadPerfilAtivo();
+
+  print("\n════════════════════════════════");
+  print("✅ PROVIDERS INICIALIZADOS");
+  print("════════════════════════════════\n");
+
   runApp(
     MultiProvider(
-      // Múltiplos providers
       providers: [
-        ChangeNotifierProvider(create: (_) => AppTema()),
-        ChangeNotifierProvider(create: (_) => PerfilProvider()),
+        ChangeNotifierProvider.value(value: appTema),
+        ChangeNotifierProvider.value(value: perfilProvider),
       ],
       child: const BluFlixApp(),
     ),

@@ -45,6 +45,8 @@ class PerfilProvider extends ChangeNotifier {
 
   // Limpar perfil ativo (usado no logout)
   Future<void> clearPerfilAtivo() async {
+    print("🔵 clearPerfilAtivo chamado");
+
     _perfilAtivoApelido = null;
     _perfilAtivoAvatar = null;
     _isPerfilPai = true;
@@ -54,6 +56,9 @@ class PerfilProvider extends ChangeNotifier {
     await prefs.remove('perfilAtivoAvatar');
     await prefs.remove('isPerfilPai');
 
+    // ✅ NÃO remove 'isDarkMode' - deixa o tema salvo!
+
+    print("✅ Perfil limpo (tema mantido)");
     notifyListeners();
   }
 }

@@ -35,7 +35,8 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) {
+      builder: (modalContext) {
+        // ✅ Use modalContext separado
         return Container(
           decoration: BoxDecoration(
             color: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
@@ -45,7 +46,6 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Indicador de arrastar
                 Container(
                   margin: const EdgeInsets.only(top: 12),
                   width: 40,
@@ -56,7 +56,6 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
                   ),
                 ),
 
-                // Cabeçalho
                 Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Row(
@@ -84,7 +83,6 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
 
                 const Divider(height: 1),
 
-                // Opção Editar (desabilitada por enquanto)
                 ListTile(
                   leading: Icon(
                     Icons.edit_outlined,
@@ -102,17 +100,19 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
                     ),
                   ),
                   onTap: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Função em desenvolvimento...'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                    Navigator.pop(modalContext); // ✅ modalContext
+                    if (mounted) {
+                      // ✅ Verifica se ainda está montado
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Função em desenvolvimento...'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   },
                 ),
 
-                // Opção Excluir
                 ListTile(
                   leading: const Icon(Icons.delete_outline, color: Colors.red),
                   title: const Text(
@@ -120,8 +120,11 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
                     style: TextStyle(color: Colors.red),
                   ),
                   onTap: () {
-                    Navigator.pop(context);
-                    _confirmarExclusao(index);
+                    Navigator.pop(modalContext); // ✅ modalContext
+                    if (mounted) {
+                      // ✅ Verifica se ainda está montado
+                      _confirmarExclusao(index);
+                    }
                   },
                 ),
 
@@ -238,27 +241,22 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
       final perfilExcluido = _perfisFilhos[index];
       final apelidoExcluido = perfilExcluido['apelido'];
 
-      // Remove da lista local
       _perfisFilhos.removeAt(index);
 
-      // Atualiza no Firestore
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
         {'perfisFilhos': _perfisFilhos},
       );
 
       print("✅ Perfil excluído com sucesso!");
 
-      // ✅ Verifica se está montado antes de usar context
-      if (!mounted) return;
+      if (!mounted) return; // ✅ Sempre verifica
 
-      // Verifica se o perfil excluído era o ativo
       final perfilProvider = Provider.of<PerfilProvider>(
         context,
         listen: false,
       );
 
       if (perfilProvider.perfilAtivoApelido == apelidoExcluido) {
-        // Se sim, volta para o perfil pai
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -272,8 +270,7 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
             isPai: true,
           );
 
-          // ✅ Verifica novamente após operação assíncrona
-          if (!mounted) return;
+          if (!mounted) return; // ✅ Verifica de novo
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -286,8 +283,7 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
           );
         }
       } else {
-        // ✅ Verifica se está montado
-        if (!mounted) return;
+        if (!mounted) return; // ✅ Verifica
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -298,13 +294,13 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
         );
       }
 
-      // Atualiza a tela
-      setState(() {});
+      if (mounted) {
+        // ✅ Verifica antes de setState
+        setState(() {});
+      }
     } catch (e) {
       print("❌ Erro ao excluir perfil: $e");
-
-      // ✅ Verifica se está montado
-      if (!mounted) return;
+      if (!mounted) return; // ✅ Verifica
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
