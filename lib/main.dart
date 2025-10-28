@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
-
+import 'perfilpai_configs.dart';
 import 'app_tema.dart';
 import 'perfil_provider.dart';
 import 'splash.dart';
@@ -21,6 +21,7 @@ import 'perfil_configs.dart';
 import 'seguranca_config.dart';
 import 'mudar_avatar.dart';
 import 'tema_config.dart';
+import 'gerenciamento_pais.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,9 +39,11 @@ Future<void> main() async {
 
   // Carrega tema salvo
   await appTema.loadTheme();
-  
-  print("   Tema carregado no main: ${appTema.isDarkMode ? 'Escuro' : 'Claro'}");
-  
+
+  print(
+    "   Tema carregado no main: ${appTema.isDarkMode ? 'Escuro' : 'Claro'}",
+  );
+
   // Carrega perfil ativo salvo
   await perfilProvider.loadPerfilAtivo();
 
@@ -132,6 +135,14 @@ class BluFlixApp extends StatelessWidget {
         GoRoute(
           path: '/mudar-avatar',
           builder: (context, state) => const MudarAvatarScreen(),
+        ),
+        GoRoute(
+          path: '/gerenciamento-pais',
+          builder: (context, state) => const GerenciamentoPaisScreen(),
+        ),
+        GoRoute(
+          path: '/perfilpai-configs',
+          builder: (context, state) => const PerfilPaiConfigsScreen(),
         ),
         GoRoute(
           path: '/tema-config',

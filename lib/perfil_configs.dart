@@ -73,12 +73,34 @@ class PerfilConfigsScreen extends StatelessWidget {
                       subtitle: user?.email ?? 'Sem e-mail',
                       appTema: appTema,
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Em desenvolvimento...'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
+                        // Apenas perfil pai pode acessar configurações de perfil
+                        if (perfilProvider.isPerfilPai) {
+                          context.push('/perfilpai-configs');
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Apenas o perfil pai pode acessar essas configurações',
+                              ),
+                              backgroundColor: Colors.orange,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Mudar Avatar
+                    _buildConfigCard(
+                      context: context,
+                      icon: Icons.face,
+                      title: 'Mudar Avatar',
+                      subtitle: 'Altere seu avatar de exibição',
+                      appTema: appTema,
+                      onTap: () {
+                        context.push('/mudar-avatar');
                       },
                     ),
 

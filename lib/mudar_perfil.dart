@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'app_tema.dart';
 import 'perfil_provider.dart';
 import 'widgets/theme_toggle_button.dart';
+import 'pin_verification.dart';
 
 class MudarPerfilScreen extends StatefulWidget {
   const MudarPerfilScreen({super.key});
@@ -37,28 +38,32 @@ class _MudarPerfilScreenState extends State<MudarPerfilScreen> {
         if (userDoc.exists) {
           final data = userDoc.data();
 
-          setState(() {
-            _perfilPai = {
-              'apelido': data?['apelido'] ?? 'Usuário',
-              'avatar': data?['avatar'] ?? 'assets/avatar1.png',
-              'tipo': 'pai',
-            };
+          if (mounted) {
+            setState(() {
+              _perfilPai = {
+                'apelido': data?['apelido'] ?? 'Usuário',
+                'avatar': data?['avatar'] ?? 'assets/avatar1.png',
+                'tipo': 'pai',
+              };
 
-            final perfis = data?['perfisFilhos'] as List<dynamic>? ?? [];
-            _perfisFilhos = perfis
-                .map((p) => Map<String, dynamic>.from(p))
-                .toList();
-            _isLoading = false;
-          });
+              final perfis = data?['perfisFilhos'] as List<dynamic>? ?? [];
+              _perfisFilhos = perfis
+                  .map((p) => Map<String, dynamic>.from(p))
+                  .toList();
+              _isLoading = false;
+            });
+          }
         }
       }
     } catch (e) {
       print('Erro ao carregar perfis: $e');
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  void _selecionarPerfil(Map<String, dynamic> perfil) async {
+  Future<void> _selecionarPerfil(Map<String, dynamic> perfil) async {
     print("🔵 _selecionarPerfil chamado");
     print("   Perfil selecionado: ${perfil['apelido']}");
 
@@ -72,6 +77,24 @@ class _MudarPerfilScreenState extends State<MudarPerfilScreen> {
     print("   Avatar: $avatar");
     print("   IsPai: $isPai");
 
+    // 🔒 PROTEÇÃO: Se está em perfil filho e quer ir para perfil pai, pede PIN
+    if (!perfilProvider.isPerfilPai && isPai) {
+      print("🔒 Tentando voltar para perfil pai - solicitando PIN");
+
+      if (!mounted) return;
+
+      final pinVerificado = await VerificarPinDialog.verificar(context);
+
+      if (!mounted) return;
+
+      if (!pinVerificado) {
+        print("❌ PIN não verificado - cancelando troca de perfil");
+        return;
+      }
+
+      print("✅ PIN verificado - permitindo troca para perfil pai");
+    }
+
     // Salva o perfil ativo
     await perfilProvider.setPerfilAtivo(
       apelido: apelido,
@@ -79,20 +102,17 @@ class _MudarPerfilScreenState extends State<MudarPerfilScreen> {
       isPai: isPai,
     );
 
-    print("✅ Perfil salvo, voltando para catálogo");
+    print("✅ Perfil salvo");
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Perfil "$apelido" selecionado!'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    // Volta para o catálogo
-    context.go('/catalogo');
+    // ✅ Navega baseado no tipo de perfil
+    print("📍 Navegando para tela apropriada...");
+    if (isPai) {
+      context.go('/gerenciamento-pais'); // 👨 Perfil pai
+    } else {
+      context.go('/catalogo'); // 👶 Perfil filho
+    }
   }
 
   @override

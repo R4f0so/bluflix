@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app_tema.dart';
+import 'perfil_provider.dart';
 import 'widgets/theme_toggle_button.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -101,8 +102,36 @@ class _LoginScreenState extends State<LoginScreen> {
             print("Perfil incompleto. Redirecionando para /avatar");
             context.go('/avatar');
           } else {
-            print("Perfil completo! Redirecionando para /catalogo");
-            context.go('/catalogo');
+            print("Perfil completo! Verificando último perfil ativo...");
+
+            // ✅ NOVA LÓGICA: Carrega o último perfil ativo e redireciona
+            final perfilProvider = Provider.of<PerfilProvider>(
+              context,
+              listen: false,
+            );
+
+            // Se não tem perfil ativo salvo, usa o perfil pai como padrão
+            if (perfilProvider.perfilAtivoApelido == null) {
+              print(
+                "⚠️ Nenhum perfil ativo salvo. Usando perfil pai como padrão",
+              );
+              await perfilProvider.setPerfilAtivo(
+                apelido: userData?['apelido'] ?? 'Usuário',
+                avatar: userData?['avatar'] ?? 'assets/avatar1.png',
+                isPai: true,
+              );
+            }
+
+            if (!mounted) return;
+
+            // Redireciona baseado no tipo de perfil
+            if (perfilProvider.isPerfilPai) {
+              print("👨 Perfil PAI - Redirecionando para /gerenciamento-pais");
+              context.go('/gerenciamento-pais');
+            } else {
+              print("👶 Perfil FILHO - Redirecionando para /catalogo");
+              context.go('/catalogo');
+            }
           }
         }
       } on FirebaseAuthException catch (e) {

@@ -1,163 +1,199 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart'; // ✅ Import aqui no topo
 import 'app_tema.dart';
 
 class VerificarPinDialog {
   static Future<bool> verificar(BuildContext context) async {
-    final appTema = Provider.of<AppTema>(context, listen: false);
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return false;
-
-    final userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .get();
-
-    final pinCadastrado = userDoc.data()?['pin'];
-
-    // Se não tem PIN cadastrado, pede para configurar primeiro
-    if (pinCadastrado == null) {
-      if (!context.mounted) return false;
-
-      await showDialog(
-        context: context,
-        builder: (dialogContext) {
-          return AlertDialog(
-            backgroundColor: appTema.isDarkMode
-                ? Colors.grey[900]
-                : Colors.white,
-            title: Row(
-              children: [
-                const Icon(Icons.lock_outline, color: Colors.orange),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'PIN não configurado',
-                    style: TextStyle(color: appTema.textColor),
-                  ),
-                ),
-              ],
-            ),
-            content: Text(
-              'Para excluir perfis, é necessário configurar um PIN de segurança primeiro.\n\nDeseja configurar agora?',
-              style: TextStyle(color: appTema.textSecondaryColor),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: Text(
-                  'Agora não',
-                  style: TextStyle(color: appTema.textSecondaryColor),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  if (context.mounted) {
-                    context.push('/seguranca-config'); // ✅ Agora funciona
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFA9DBF4),
-                  foregroundColor: Colors.black,
-                ),
-                child: const Text('Configurar'),
-              ),
-            ],
-          );
-        },
-      );
-      return false;
-    }
-
-    // Verifica se o context ainda está montado antes de usar
-    if (!context.mounted) return false;
-
-    // Se tem PIN, pede verificação
     final pinController = TextEditingController();
-    bool? resultado = await showDialog<bool>(
+
+    final resultado = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
-          title: Row(
-            children: [
-              const Icon(Icons.lock, color: Color(0xFFA9DBF4)),
-              const SizedBox(width: 12),
-              Text('Digite o PIN', style: TextStyle(color: appTema.textColor)),
-            ],
-          ),
-          content: TextField(
-            controller: pinController,
-            keyboardType: TextInputType.number,
-            maxLength: 4,
-            obscureText: true,
-            autofocus: true,
-            textAlign: TextAlign.center,
+      builder: (dialogContext) =>
+          _PinDialogContent(pinController: pinController),
+    );
+
+    return resultado ?? false;
+  }
+}
+
+class _PinDialogContent extends StatefulWidget {
+  final TextEditingController pinController;
+
+  const _PinDialogContent({required this.pinController});
+
+  @override
+  State<_PinDialogContent> createState() => _PinDialogContentState();
+}
+
+class _PinDialogContentState extends State<_PinDialogContent> {
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  Future<void> _verificarPin() async {
+    final pin = widget.pinController.text.trim();
+
+    if (pin.isEmpty) {
+      setState(() {
+        _errorMessage = 'Digite o PIN';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        final pinSalvo = userDoc.data()?['pin'];
+
+        if (!mounted) return;
+
+        if (pinSalvo == pin) {
+          // PIN correto
+          Navigator.of(context).pop(true);
+        } else {
+          // PIN incorreto
+          setState(() {
+            _errorMessage = 'PIN incorreto';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'Erro ao verificar PIN';
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appTema = Provider.of<AppTema>(context);
+
+    return AlertDialog(
+      backgroundColor: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: appTema.isDarkMode ? Colors.white24 : Colors.black12,
+          width: 1,
+        ),
+      ),
+      title: Row(
+        children: [
+          Icon(Icons.lock_outline, color: const Color(0xFFA9DBF4), size: 28),
+          const SizedBox(width: 12),
+          Text(
+            'Digite o PIN',
             style: TextStyle(
               color: appTema.textColor,
-              fontSize: 24,
-              letterSpacing: 12,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: widget.pinController,
+            keyboardType: TextInputType.number,
+            obscureText: true,
+            maxLength: 4,
+            autofocus: true,
+            style: TextStyle(
+              color: appTema.textColor,
+              fontSize: 18,
+              letterSpacing: 8,
+            ),
             decoration: InputDecoration(
               hintText: '••••',
-              hintStyle: TextStyle(color: appTema.textSecondaryColor),
+              hintStyle: TextStyle(
+                color: appTema.textSecondaryColor,
+                letterSpacing: 8,
+              ),
+              errorText: _errorMessage,
+              errorStyle: const TextStyle(color: Colors.red, fontSize: 14),
+              counterText: '',
               filled: true,
               fillColor: appTema.isDarkMode
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : Colors.grey[200],
+                  ? Colors.grey[800]
+                  : Colors.grey[100],
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
-              counterText: '',
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color(0xFFA9DBF4),
+                  width: 2,
+                ),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 2),
+              ),
+            ),
+            onSubmitted: (_) => _verificarPin(),
+          ),
+          if (_isLoading) ...[
+            const SizedBox(height: 20),
+            const CircularProgressIndicator(color: Color(0xFFA9DBF4)),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading
+              ? null
+              : () {
+                  Navigator.of(context).pop(false);
+                },
+          style: TextButton.styleFrom(
+            foregroundColor: appTema.isDarkMode
+                ? Colors.white70
+                : Colors.black54,
+          ),
+          child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _verificarPin,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFA9DBF4),
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(
-                'Cancelar',
-                style: TextStyle(color: appTema.textSecondaryColor),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (pinController.text == pinCadastrado) {
-                  Navigator.pop(dialogContext, true);
-                } else {
-                  if (dialogContext.mounted) {
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      const SnackBar(
-                        content: Text('PIN incorreto!'),
-                        backgroundColor: Colors.red,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  }
-                  pinController.clear();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFA9DBF4),
-                foregroundColor: Colors.black,
-              ),
-              child: const Text('Confirmar'),
-            ),
-          ],
-        );
-      },
+          child: const Text(
+            'Verificar',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
     );
+  }
 
-    pinController.dispose();
-    return resultado ?? false;
+  @override
+  void dispose() {
+    widget.pinController.dispose();
+    super.dispose();
   }
 }
