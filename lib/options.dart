@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'app_tema.dart';
-import 'widgets/theme_toggle_button.dart'; // ✅ Import
+import 'widgets/theme_toggle_button.dart';
 
 class OptionsScreen extends StatelessWidget {
   const OptionsScreen({super.key});
@@ -17,30 +17,36 @@ class OptionsScreen extends StatelessWidget {
         height: double.infinity,
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage(appTema.backgroundImage),
+            image: AssetImage(
+              appTema.isDarkMode
+                  ? "assets/night_background.png"
+                  : "assets/morning_background.png",
+            ),
             fit: BoxFit.cover,
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // AppBar
+              // Botão de tema no canto superior direito
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
-                    Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    const ThemeToggleButton(), // ✅ Uso do componente
+                    const ThemeToggleButton(showLogo: false), // ✅ SEM logo
                   ],
                 ),
               ),
 
               const Spacer(),
 
-              Image.asset("assets/logo.png", width: 250),
-              const SizedBox(height: 50),
+              // Logo BluFlix
+              Image.asset("assets/logo.png", height: 100),
 
+              const SizedBox(height: 60),
+
+              // Botão Entrar
               SizedBox(
                 width: 200,
                 height: 50,
@@ -49,7 +55,7 @@ class OptionsScreen extends StatelessWidget {
                     context.push('/login');
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFA9DBF4),
+                    backgroundColor: const Color(0xFFA9DBF4), // Azul claro
                     foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -57,12 +63,16 @@ class OptionsScreen extends StatelessWidget {
                     elevation: 4,
                     shadowColor: Colors.black.withValues(alpha: 77 / 255),
                   ),
-                  child: const Text("Entrar", style: TextStyle(fontSize: 18)),
+                  child: const Text(
+                    "Entrar",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
 
               const SizedBox(height: 20),
 
+              // Botão Cadastrar
               SizedBox(
                 width: 200,
                 height: 50,
@@ -71,7 +81,7 @@ class OptionsScreen extends StatelessWidget {
                     context.push('/cadastro');
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFA9DBF4),
+                    backgroundColor: const Color(0xFFA9DBF4), // Azul claro
                     foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -81,7 +91,7 @@ class OptionsScreen extends StatelessWidget {
                   ),
                   child: const Text(
                     "Cadastrar",
-                    style: TextStyle(fontSize: 18),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

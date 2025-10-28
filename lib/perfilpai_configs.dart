@@ -186,29 +186,22 @@ class _PerfilPaiConfigsScreenState extends State<PerfilPaiConfigsScreen> {
           child: Column(
             children: [
               // AppBar
+              // AppBar
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
+                    Image.asset("assets/logo.png", height: 40),
+                    const Spacer(),
+                    const ThemeToggleButton(showLogo: false), // ✅ SEM logo
                     IconButton(
                       onPressed: () => context.pop(),
                       icon: Icon(
-                        Icons.arrow_back,
+                        Icons.close,
                         color: appTema.textColor,
                         size: 28,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Configurações do Perfil',
-                      style: TextStyle(
-                        color: appTema.textColor,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    const ThemeToggleButton(),
                   ],
                 ),
               ),

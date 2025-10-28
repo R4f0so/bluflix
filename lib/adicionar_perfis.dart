@@ -345,7 +345,7 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
                   children: [
                     Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    const ThemeToggleButton(),
+                    const ThemeToggleButton(showLogo: false), // ✅ SEM logo
                     IconButton(
                       onPressed: () => context.pop(),
                       icon: Icon(

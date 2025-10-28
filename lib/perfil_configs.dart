@@ -35,7 +35,7 @@ class PerfilConfigsScreen extends StatelessWidget {
                   children: [
                     Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    const ThemeToggleButton(),
+                    const ThemeToggleButton(showLogo: false), // ✅ CORRIGIDO
                     IconButton(
                       onPressed: () => context.pop(),
                       icon: Icon(
@@ -388,32 +388,52 @@ class _ConfirmarLogoutDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Define cores adaptativas baseadas no tema
+    final corPrimaria = appTema.isDarkMode
+        ? Colors.blue[600]!
+        : Colors.blue[800]!;
+    final corFundo = appTema.isDarkMode
+        ? Colors.blue.withValues(alpha: 0.15)
+        : Colors.blue.withValues(alpha: 0.1);
+    final corBorda = appTema.isDarkMode
+        ? Colors.blue.withValues(alpha: 0.4)
+        : Colors.blue.withValues(alpha: 0.3);
+
     return AlertDialog(
       backgroundColor: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: appTema.isDarkMode ? Colors.white24 : Colors.black12,
-          width: 1,
+        side: BorderSide(color: corBorda, width: 2),
+      ),
+      title: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: corFundo,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.logout, color: corPrimaria, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Sair da Conta',
+                style: TextStyle(
+                  color: appTema.textColor,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-      title: Row(
-        children: [
-          Icon(Icons.logout, color: Colors.orange[700], size: 28),
-          const SizedBox(width: 12),
-          Text(
-            'Sair da Conta',
-            style: TextStyle(
-              color: appTema.textColor,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-      content: Text(
-        'Tem certeza que deseja sair da sua conta?',
-        style: TextStyle(color: appTema.textSecondaryColor, fontSize: 16),
+      content: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text(
+          'Tem certeza que deseja sair da sua conta?',
+          style: TextStyle(color: appTema.textSecondaryColor, fontSize: 16),
+        ),
       ),
       actions: [
         TextButton(
@@ -422,16 +442,28 @@ class _ConfirmarLogoutDialog extends StatelessWidget {
             foregroundColor: appTema.isDarkMode
                 ? Colors.white70
                 : Colors.black54,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           ),
-          child: const Text('Cancelar'),
+          child: const Text(
+            'Cancelar',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
         ),
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(true),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange[700],
+            backgroundColor: corPrimaria,
             foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 2,
           ),
-          child: const Text('Sair'),
+          child: const Text(
+            'Encerrar Sessão',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
         ),
       ],
     );

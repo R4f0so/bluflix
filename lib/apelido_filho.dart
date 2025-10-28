@@ -140,12 +140,23 @@ class _ApelidoFilhoScreenState extends State<ApelidoFilhoScreen> {
             child: Column(
               children: [
                 // AppBar
-                Row(
-                  children: [
-                    Image.asset("assets/logo.png", height: 40),
-                    const Spacer(),
-                    const ThemeToggleButton(),
-                  ],
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Image.asset("assets/logo.png", height: 40),
+                      const Spacer(),
+                      const ThemeToggleButton(showLogo: false), // ✅ SEM logo
+                      IconButton(
+                        onPressed: () => context.pop(),
+                        icon: Icon(
+                          Icons.close,
+                          color: appTema.textColor,
+                          size: 28,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
 
                 const Spacer(),

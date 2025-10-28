@@ -141,7 +141,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
                   children: [
                     Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    const ThemeToggleButton(),
+                    const ThemeToggleButton(showLogo: false), // ✅ CORRIGIDO
                   ],
                 ),
               ),

@@ -106,9 +106,11 @@ class _SegurancaConfigScreenState extends State<SegurancaConfigScreen> {
       builder: (context) {
         final appTema = Provider.of<AppTema>(context, listen: false);
         return AlertDialog(
-          backgroundColor:
-              appTema.isDarkMode ? Colors.grey[900] : Colors.white,
-          title: Text('Remover PIN', style: TextStyle(color: appTema.textColor)),
+          backgroundColor: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
+          title: Text(
+            'Remover PIN',
+            style: TextStyle(color: appTema.textColor),
+          ),
           content: Text(
             'Deseja realmente remover o PIN de segurança?',
             style: TextStyle(color: appTema.textSecondaryColor),
@@ -159,10 +161,7 @@ class _SegurancaConfigScreenState extends State<SegurancaConfigScreen> {
 
   void _mostrarErro(String mensagem) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensagem),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(mensagem), backgroundColor: Colors.red),
     );
   }
 
@@ -190,10 +189,14 @@ class _SegurancaConfigScreenState extends State<SegurancaConfigScreen> {
                   children: [
                     Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    const ThemeToggleButton(),
+                    const ThemeToggleButton(showLogo: false), // ✅ SEM logo
                     IconButton(
                       onPressed: () => context.pop(),
-                      icon: Icon(Icons.close, color: appTema.textColor, size: 28),
+                      icon: Icon(
+                        Icons.close,
+                        color: appTema.textColor,
+                        size: 28,
+                      ),
                     ),
                   ],
                 ),
@@ -277,7 +280,9 @@ class _SegurancaConfigScreenState extends State<SegurancaConfigScreen> {
                                   ),
                                 )
                               : Text(
-                                  _pinAtual == null ? 'Configurar PIN' : 'Alterar PIN',
+                                  _pinAtual == null
+                                      ? 'Configurar PIN'
+                                      : 'Alterar PIN',
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,

@@ -35,7 +35,7 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
   @override
   void initState() {
     super.initState();
-    
+
     // Pega o avatar atual
     final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
     _selectedAvatar = perfilProvider.perfilAtivoAvatar ?? avatars[0];
@@ -45,9 +45,10 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
       duration: const Duration(seconds: 1),
     )..repeat(reverse: true);
 
-    _animation = Tween<double>(begin: 0, end: 20).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0,
+      end: 20,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -65,8 +66,10 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      final perfilProvider =
-          Provider.of<PerfilProvider>(context, listen: false);
+      final perfilProvider = Provider.of<PerfilProvider>(
+        context,
+        listen: false,
+      );
 
       // Verifica se é perfil pai ou filho
       if (perfilProvider.isPerfilPai) {
@@ -170,10 +173,14 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
                   children: [
                     Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    const ThemeToggleButton(),
+                    const ThemeToggleButton(showLogo: false), // ✅ SEM logo
                     IconButton(
                       onPressed: () => context.pop(),
-                      icon: Icon(Icons.close, color: appTema.textColor, size: 28),
+                      icon: Icon(
+                        Icons.close,
+                        color: appTema.textColor,
+                        size: 28,
+                      ),
                     ),
                   ],
                 ),
@@ -219,8 +226,9 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
                           return Transform.translate(
                             offset: Offset(0, offset),
                             child: Container(
-                              padding:
-                                  isSelected ? const EdgeInsets.all(4) : null,
+                              padding: isSelected
+                                  ? const EdgeInsets.all(4)
+                                  : null,
                               decoration: isSelected
                                   ? BoxDecoration(
                                       shape: BoxShape.circle,
@@ -231,10 +239,7 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
                                     )
                                   : null,
                               child: ClipOval(
-                                child: Image.asset(
-                                  avatar,
-                                  fit: BoxFit.cover,
-                                ),
+                                child: Image.asset(avatar, fit: BoxFit.cover),
                               ),
                             ),
                           );
