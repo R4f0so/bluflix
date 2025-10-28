@@ -121,8 +121,6 @@ class PerfilConfigsScreen extends StatelessWidget {
 
                     if (perfilProvider.isPerfilPai) const SizedBox(height: 16),
 
-                    if (perfilProvider.isPerfilPai) const SizedBox(height: 16),
-
                     _buildConfigCard(
                       context: context,
                       icon: Icons.palette_outlined,
@@ -202,6 +200,66 @@ class PerfilConfigsScreen extends StatelessWidget {
                         _mostrarSobre(context, appTema);
                       },
                     ),
+
+                    const SizedBox(height: 32),
+
+                    // Botão de Logout
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: appTema.isDarkMode
+                            ? Colors.blue.withValues(alpha: 0.15)
+                            : Colors.blue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: appTema.isDarkMode
+                              ? Colors.blue.withValues(alpha: 0.4)
+                              : Colors.blue.withValues(alpha: 0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            final router = GoRouter.of(context);
+
+                            final confirmar = await showDialog<bool>(
+                              context: context,
+                              builder: (dialogContext) =>
+                                  _ConfirmarLogoutDialog(appTema: appTema),
+                            );
+
+                            if (confirmar == true) {
+                              await FirebaseAuth.instance.signOut();
+
+                              // Usa router salvo antes da operação assíncrona
+                              router.go('/options');
+                            }
+                          },
+                          icon: const Icon(Icons.logout, color: Colors.white),
+                          label: const Text(
+                            'Encerrar Sessão',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: appTema.isDarkMode
+                                ? Colors.blue[600]
+                                : Colors.blue[800],
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -315,6 +373,67 @@ class PerfilConfigsScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DIÁLOGO: CONFIRMAR LOGOUT
+// ═══════════════════════════════════════════════════════════════
+
+class _ConfirmarLogoutDialog extends StatelessWidget {
+  final AppTema appTema;
+
+  const _ConfirmarLogoutDialog({required this.appTema});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: appTema.isDarkMode ? Colors.white24 : Colors.black12,
+          width: 1,
+        ),
+      ),
+      title: Row(
+        children: [
+          Icon(Icons.logout, color: Colors.orange[700], size: 28),
+          const SizedBox(width: 12),
+          Text(
+            'Sair da Conta',
+            style: TextStyle(
+              color: appTema.textColor,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+      content: Text(
+        'Tem certeza que deseja sair da sua conta?',
+        style: TextStyle(color: appTema.textSecondaryColor, fontSize: 16),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          style: TextButton.styleFrom(
+            foregroundColor: appTema.isDarkMode
+                ? Colors.white70
+                : Colors.black54,
+          ),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orange[700],
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('Sair'),
+        ),
+      ],
     );
   }
 }
