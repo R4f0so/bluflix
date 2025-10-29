@@ -52,7 +52,13 @@ class _ApelidoScreenState extends State<ApelidoScreen> {
 
         if (!mounted) return;
         // O usuário que acabou de se cadastrar é SEMPRE perfil pai
-        context.go('/gerenciamento-pais');
+        context.push(
+          '/criapin',
+          extra: {
+            'apelido': _apelidoController.text.trim(),
+            'avatar': widget.selectedAvatar,
+          },
+        );
       }
     } catch (e) {
       print("Erro ao salvar dados: $e");

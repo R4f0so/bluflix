@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'app_tema.dart';
 import 'perfil_provider.dart';
-
+import 'mudar_avatar.dart';
 import 'splash.dart';
 import 'options.dart';
 import 'login.dart';
@@ -20,9 +20,9 @@ import 'mudar_perfil.dart';
 import 'gerenciamento_pais.dart';
 import 'perfil_configs.dart';
 import 'perfilpai_configs.dart';
-import 'mudar_avatar.dart';
 import 'seguranca_config.dart';
 import 'tema_config.dart';
+import 'criapin.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,6 +55,16 @@ class BluFlixApp extends StatelessWidget {
         GoRoute(
           path: '/cadastro',
           builder: (context, state) => const CadastroScreen(),
+        ),
+        GoRoute(
+          path: '/criapin',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, String>;
+            return CriaPinScreen(
+              apelido: extra['apelido']!,
+              avatar: extra['avatar']!,
+            );
+          },
         ),
         GoRoute(
           path: '/avatar',

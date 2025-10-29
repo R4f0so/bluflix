@@ -36,8 +36,15 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
   void initState() {
     super.initState();
 
-    // Pega o avatar atual
     final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
+    
+    print("════════════════════════════════");
+    print("🎨 MUDAR AVATAR - INIT STATE");
+    print("   Perfil Ativo: ${perfilProvider.perfilAtivoApelido}");
+    print("   Avatar Atual: ${perfilProvider.perfilAtivoAvatar}");
+    print("   É Pai?: ${perfilProvider.isPerfilPai}");
+    print("════════════════════════════════");
+    
     _selectedAvatar = perfilProvider.perfilAtivoAvatar ?? avatars[0];
 
     _controller = AnimationController(
@@ -58,67 +65,105 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
   }
 
   Future<void> _salvarAvatar() async {
-    if (_selectedAvatar == null) return;
+    if (_selectedAvatar == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, selecione um avatar'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        throw Exception('Usuário não autenticado');
+      }
 
       final perfilProvider = Provider.of<PerfilProvider>(
         context,
         listen: false,
       );
 
-      // Verifica se é perfil pai ou filho
+      if (perfilProvider.perfilAtivoApelido == null) {
+        throw Exception('Nenhum perfil ativo encontrado');
+      }
+
+      print("════════════════════════════════");
+      print("💾 SALVANDO AVATAR");
+      print("   Avatar selecionado: $_selectedAvatar");
+      print("   Perfil: ${perfilProvider.perfilAtivoApelido}");
+      print("   É Pai?: ${perfilProvider.isPerfilPai}");
+      print("════════════════════════════════");
+
       if (perfilProvider.isPerfilPai) {
-        // Atualiza avatar do perfil pai
+        print("   → Salvando avatar do PERFIL PAI");
+        
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .update({'avatar': _selectedAvatar});
 
-        // Atualiza no provider
+        print("   ✅ Avatar salvo no Firestore");
+
         await perfilProvider.setPerfilAtivo(
           apelido: perfilProvider.perfilAtivoApelido!,
           avatar: _selectedAvatar!,
           isPai: true,
         );
+
+        print("   ✅ Provider atualizado");
       } else {
-        // Atualiza avatar do perfil filho
+        print("   → Salvando avatar do PERFIL FILHO");
+        
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .get();
 
-        if (userDoc.exists) {
-          final data = userDoc.data();
-          List<dynamic> perfisFilhos = data?['perfisFilhos'] ?? [];
-
-          // Encontra o perfil filho atual e atualiza
-          for (int i = 0; i < perfisFilhos.length; i++) {
-            if (perfisFilhos[i]['apelido'] ==
-                perfilProvider.perfilAtivoApelido) {
-              perfisFilhos[i]['avatar'] = _selectedAvatar;
-              break;
-            }
-          }
-
-          // Salva no Firestore
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .update({'perfisFilhos': perfisFilhos});
-
-          // Atualiza no provider
-          await perfilProvider.setPerfilAtivo(
-            apelido: perfilProvider.perfilAtivoApelido!,
-            avatar: _selectedAvatar!,
-            isPai: false,
-          );
+        if (!userDoc.exists) {
+          throw Exception('Documento do usuário não encontrado');
         }
+
+        final data = userDoc.data();
+        List<dynamic> perfisFilhos = data?['perfisFilhos'] ?? [];
+
+        print("   → Total de perfis filhos: ${perfisFilhos.length}");
+
+        bool perfilEncontrado = false;
+        for (int i = 0; i < perfisFilhos.length; i++) {
+          if (perfisFilhos[i]['apelido'] == perfilProvider.perfilAtivoApelido) {
+            perfisFilhos[i]['avatar'] = _selectedAvatar;
+            perfilEncontrado = true;
+            print("   ✅ Perfil filho encontrado no índice $i");
+            break;
+          }
+        }
+
+        if (!perfilEncontrado) {
+          throw Exception('Perfil filho não encontrado na lista');
+        }
+
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({'perfisFilhos': perfisFilhos});
+
+        print("   ✅ Avatar salvo no Firestore");
+
+        await perfilProvider.setPerfilAtivo(
+          apelido: perfilProvider.perfilAtivoApelido!,
+          avatar: _selectedAvatar!,
+          isPai: false,
+        );
+
+        print("   ✅ Provider atualizado");
       }
+
+      print("════════════════════════════════");
 
       if (!mounted) return;
 
@@ -132,7 +177,10 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
 
       context.pop();
     } catch (e) {
-      print('Erro ao salvar avatar: $e');
+      print("════════════════════════════════");
+      print('❌ ERRO AO SALVAR AVATAR: $e');
+      print("════════════════════════════════");
+      
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -166,14 +214,13 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
         child: SafeArea(
           child: Column(
             children: [
-              // AppBar
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
                     Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    const ThemeToggleButton(showLogo: false), // ✅ SEM logo
+                    const ThemeToggleButton(showLogo: false),
                     IconButton(
                       onPressed: () => context.pop(),
                       icon: Icon(
@@ -199,7 +246,6 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
 
               const SizedBox(height: 30),
 
-              // Grid de avatares
               Expanded(
                 child: GridView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -250,7 +296,6 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
                 ),
               ),
 
-              // Botão Salvar
               Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: SizedBox(
