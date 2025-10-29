@@ -16,6 +16,7 @@ class CatalogoScreen extends StatefulWidget {
 
 class _CatalogoScreenState extends State<CatalogoScreen> {
   bool _isLoading = true;
+  List<String> _generosVisiveis = []; // 🆕 Lista de gêneros visíveis
 
   @override
   void initState() {
@@ -52,6 +53,48 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             print(
               "✅ Usando perfil ativo: ${perfilProvider.perfilAtivoApelido}",
             );
+
+            // 🆕 Carregar preferências baseado no tipo de perfil
+            if (perfilProvider.isPerfilPai) {
+              // Perfil pai vê todos os gêneros
+              _generosVisiveis = [
+                'Ação',
+                'Comédia',
+                'Drama',
+                'Terror',
+                'Ficção Científica',
+                'Romance',
+                'Animação',
+                'Documentário',
+              ];
+            } else {
+              // Perfil filho vê apenas os gêneros das preferências
+              final perfisFilhos =
+                  data?['perfisFilhos'] as List<dynamic>? ?? [];
+              final perfilAtivo = perfisFilhos.firstWhere(
+                (p) => p['apelido'] == perfilProvider.perfilAtivoApelido,
+                orElse: () => null,
+              );
+
+              if (perfilAtivo != null) {
+                final interesses =
+                    perfilAtivo['interesses'] as List<dynamic>? ?? [];
+                _generosVisiveis = interesses.map((e) => e.toString()).toList();
+              } else {
+                // Fallback: mostra todos se não encontrar preferências
+                _generosVisiveis = [
+                  'Ação',
+                  'Comédia',
+                  'Drama',
+                  'Terror',
+                  'Ficção Científica',
+                  'Romance',
+                  'Animação',
+                  'Documentário',
+                ];
+              }
+            }
+
             setState(() {
               _isLoading = false;
             });
@@ -65,6 +108,18 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               avatar: avatar,
               isPai: true,
             );
+
+            // Perfil pai vê todos os gêneros
+            _generosVisiveis = [
+              'Ação',
+              'Comédia',
+              'Drama',
+              'Terror',
+              'Ficção Científica',
+              'Romance',
+              'Animação',
+              'Documentário',
+            ];
 
             setState(() {
               _isLoading = false;
@@ -357,7 +412,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 ),
               ),
 
-              // Grid de Gêneros
+              // Grid de Gêneros - 🆕 Filtrado por preferências
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -367,54 +422,63 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                     mainAxisSpacing: 16,
                     childAspectRatio: 1.2,
                     children: [
-                      _buildGeneroCard(
-                        emoji: '🎬',
-                        genero: 'Ação',
-                        cor: Colors.red,
-                        appTema: appTema,
-                      ),
-                      _buildGeneroCard(
-                        emoji: '😂',
-                        genero: 'Comédia',
-                        cor: Colors.orange,
-                        appTema: appTema,
-                      ),
-                      _buildGeneroCard(
-                        emoji: '💔',
-                        genero: 'Drama',
-                        cor: Colors.purple,
-                        appTema: appTema,
-                      ),
-                      _buildGeneroCard(
-                        emoji: '😱',
-                        genero: 'Terror',
-                        cor: Colors.grey[800]!,
-                        appTema: appTema,
-                      ),
-                      _buildGeneroCard(
-                        emoji: '🚀',
-                        genero: 'Ficção Científica',
-                        cor: Colors.blue,
-                        appTema: appTema,
-                      ),
-                      _buildGeneroCard(
-                        emoji: '❤️',
-                        genero: 'Romance',
-                        cor: Colors.pink,
-                        appTema: appTema,
-                      ),
-                      _buildGeneroCard(
-                        emoji: '🎨',
-                        genero: 'Animação',
-                        cor: Colors.green,
-                        appTema: appTema,
-                      ),
-                      _buildGeneroCard(
-                        emoji: '📚',
-                        genero: 'Documentário',
-                        cor: Colors.brown,
-                        appTema: appTema,
-                      ),
+                      // 🆕 Filtrar apenas os gêneros visíveis
+                      if (_generosVisiveis.contains('Ação'))
+                        _buildGeneroCard(
+                          emoji: '🎬',
+                          genero: 'Ação',
+                          cor: Colors.red,
+                          appTema: appTema,
+                        ),
+                      if (_generosVisiveis.contains('Comédia'))
+                        _buildGeneroCard(
+                          emoji: '😂',
+                          genero: 'Comédia',
+                          cor: Colors.orange,
+                          appTema: appTema,
+                        ),
+                      if (_generosVisiveis.contains('Drama'))
+                        _buildGeneroCard(
+                          emoji: '💔',
+                          genero: 'Drama',
+                          cor: Colors.purple,
+                          appTema: appTema,
+                        ),
+                      if (_generosVisiveis.contains('Terror'))
+                        _buildGeneroCard(
+                          emoji: '😱',
+                          genero: 'Terror',
+                          cor: Colors.grey[800]!,
+                          appTema: appTema,
+                        ),
+                      if (_generosVisiveis.contains('Ficção Científica'))
+                        _buildGeneroCard(
+                          emoji: '🚀',
+                          genero: 'Ficção Científica',
+                          cor: Colors.blue,
+                          appTema: appTema,
+                        ),
+                      if (_generosVisiveis.contains('Romance'))
+                        _buildGeneroCard(
+                          emoji: '❤️',
+                          genero: 'Romance',
+                          cor: Colors.pink,
+                          appTema: appTema,
+                        ),
+                      if (_generosVisiveis.contains('Animação'))
+                        _buildGeneroCard(
+                          emoji: '🎨',
+                          genero: 'Animação',
+                          cor: Colors.green,
+                          appTema: appTema,
+                        ),
+                      if (_generosVisiveis.contains('Documentário'))
+                        _buildGeneroCard(
+                          emoji: '📚',
+                          genero: 'Documentário',
+                          cor: Colors.brown,
+                          appTema: appTema,
+                        ),
                     ],
                   ),
                 ),

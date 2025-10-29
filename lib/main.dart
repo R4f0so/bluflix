@@ -23,6 +23,7 @@ import 'perfilpai_configs.dart';
 import 'seguranca_config.dart';
 import 'tema_config.dart';
 import 'criapin.dart';
+import 'preferencias_filho.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +52,16 @@ class BluFlixApp extends StatelessWidget {
         GoRoute(
           path: '/login',
           builder: (context, state) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/preferencias-filho',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, String>;
+            return PreferenciasFilhoScreen(
+              apelido: extra['apelido']!,
+              avatar: extra['avatar']!,
+            );
+          },
         ),
         GoRoute(
           path: '/cadastro',
