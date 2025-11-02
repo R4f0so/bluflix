@@ -28,6 +28,7 @@ import 'video_model_youtube.dart';
 import 'lista_videos_screen_youtube.dart';
 import 'video_player_youtube_screen.dart';
 import 'admin_add_video_screen.dart';
+import 'admin_listar_videos_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -161,6 +162,11 @@ class BluFlixApp extends StatelessWidget {
         GoRoute(
           path: '/admin-add-video',
           builder: (context, state) => const AdminAddVideoScreen(),
+        ),
+        // Gerenciar vídeos (admin) - listar e gerenciar
+        GoRoute(
+          path: '/admin-videos',
+          builder: (context, state) => const AdminListarVideosScreen(),
         ),
         GoRoute(
           path: '/tema-config',
