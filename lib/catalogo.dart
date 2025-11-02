@@ -16,7 +16,7 @@ class CatalogoScreen extends StatefulWidget {
 
 class _CatalogoScreenState extends State<CatalogoScreen> {
   bool _isLoading = true;
-  List<String> _generosVisiveis = []; // 🆕 Lista de gêneros visíveis
+  List<String> _generosVisiveis = [];
 
   @override
   void initState() {
@@ -54,7 +54,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               "✅ Usando perfil ativo: ${perfilProvider.perfilAtivoApelido}",
             );
 
-            // 🆕 Carregar preferências baseado no tipo de perfil
+            // Carregar preferências baseado no tipo de perfil
             if (perfilProvider.isPerfilPai) {
               // Perfil pai vê todos os gêneros
               _generosVisiveis = [
@@ -70,65 +70,28 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             } else {
               // Perfil filho vê apenas os gêneros das preferências
               final perfisFilhos =
-                  data?['perfisFilhos'] as List<dynamic>? ?? [];
-              final perfilAtivo = perfisFilhos.firstWhere(
-                (p) => p['apelido'] == perfilProvider.perfilAtivoApelido,
+                  data?['perfis_filhos'] as List<dynamic>? ?? [];
+
+              final perfilFilhoAtual = perfisFilhos.firstWhere(
+                (perfil) =>
+                    perfil['apelido'] == perfilProvider.perfilAtivoApelido,
                 orElse: () => null,
               );
 
-              if (perfilAtivo != null) {
-                final interesses =
-                    perfilAtivo['interesses'] as List<dynamic>? ?? [];
-                _generosVisiveis = interesses.map((e) => e.toString()).toList();
-              } else {
-                // Fallback: mostra todos se não encontrar preferências
-                _generosVisiveis = [
-                  'Ação',
-                  'Comédia',
-                  'Drama',
-                  'Terror',
-                  'Ficção Científica',
-                  'Romance',
-                  'Animação',
-                  'Documentário',
-                ];
+              if (perfilFilhoAtual != null) {
+                final generosFavoritos =
+                    perfilFilhoAtual['generosFavoritos'] as List<dynamic>? ??
+                    [];
+                _generosVisiveis = List<String>.from(generosFavoritos);
               }
             }
-
-            setState(() {
-              _isLoading = false;
-            });
-          } else {
-            print("⚠️ Nenhum perfil ativo, usando perfil pai");
-            final apelido = data?['apelido'] ?? 'Usuário';
-            final avatar = data?['avatar'] ?? 'assets/avatar1.png';
-
-            await perfilProvider.setPerfilAtivo(
-              apelido: apelido,
-              avatar: avatar,
-              isPai: true,
-            );
-
-            // Perfil pai vê todos os gêneros
-            _generosVisiveis = [
-              'Ação',
-              'Comédia',
-              'Drama',
-              'Terror',
-              'Ficção Científica',
-              'Romance',
-              'Animação',
-              'Documentário',
-            ];
-
-            setState(() {
-              _isLoading = false;
-            });
           }
         }
       }
+
+      setState(() => _isLoading = false);
     } catch (e) {
-      print('❌ Erro ao carregar dados do usuário: $e');
+      print("❌ Erro ao carregar dados: $e");
       setState(() => _isLoading = false);
     }
   }
@@ -354,8 +317,8 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: appTema.backgroundColor,
-        body: Center(
-          child: CircularProgressIndicator(color: const Color(0xFFA9DBF4)),
+        body: const Center(
+          child: CircularProgressIndicator(color: Color(0xFFA9DBF4)),
         ),
       );
     }
@@ -373,12 +336,20 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // AppBar
+              // ═══════════════════════════════════════════════════════
+              // APPBAR - SETA VOLTAR (SÓ PARA PAI), TEMA E AVATAR
+              // ═══════════════════════════════════════════════════════
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
-                    Image.asset("assets/logo.png", height: 40),
+                    // Seta de voltar (APENAS para perfil pai)
+                    if (perfilProvider.isPerfilPai)
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, size: 28),
+                        color: appTema.textColor,
+                        onPressed: () => context.go('/gerenciamento-pais'),
+                      ),
                     const Spacer(),
                     const ThemeToggleButton(),
                     const SizedBox(width: 8),
@@ -393,7 +364,9 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 ),
               ),
 
-              // Saudação
+              // ═══════════════════════════════════════════════════════
+              // SAUDAÇÃO
+              // ═══════════════════════════════════════════════════════
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -412,20 +385,21 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 ),
               ),
 
-              // Grid de Gêneros - 🆕 Filtrado por preferências
+              // ═══════════════════════════════════════════════════════
+              // GRADE DE GÊNEROS
+              // ═══════════════════════════════════════════════════════
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: GridView.count(
                     crossAxisCount: 2,
-                    crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
-                    childAspectRatio: 1.2,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 1.1,
                     children: [
-                      // 🆕 Filtrar apenas os gêneros visíveis
                       if (_generosVisiveis.contains('Ação'))
                         _buildGeneroCard(
-                          emoji: '🎬',
+                          emoji: '💥',
                           genero: 'Ação',
                           cor: Colors.red,
                           appTema: appTema,
@@ -434,21 +408,21 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                         _buildGeneroCard(
                           emoji: '😂',
                           genero: 'Comédia',
-                          cor: Colors.orange,
+                          cor: Colors.yellow,
                           appTema: appTema,
                         ),
                       if (_generosVisiveis.contains('Drama'))
                         _buildGeneroCard(
-                          emoji: '💔',
+                          emoji: '🎭',
                           genero: 'Drama',
                           cor: Colors.purple,
                           appTema: appTema,
                         ),
                       if (_generosVisiveis.contains('Terror'))
                         _buildGeneroCard(
-                          emoji: '😱',
+                          emoji: '👻',
                           genero: 'Terror',
-                          cor: Colors.grey[800]!,
+                          cor: Colors.black,
                           appTema: appTema,
                         ),
                       if (_generosVisiveis.contains('Ficção Científica'))
@@ -460,7 +434,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                         ),
                       if (_generosVisiveis.contains('Romance'))
                         _buildGeneroCard(
-                          emoji: '❤️',
+                          emoji: '💕',
                           genero: 'Romance',
                           cor: Colors.pink,
                           appTema: appTema,
@@ -492,6 +466,9 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     );
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // WIDGET: CARD DE GÊNERO
+  // ═══════════════════════════════════════════════════════════════
   Widget _buildGeneroCard({
     required String emoji,
     required String genero,
@@ -500,17 +477,10 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   }) {
     return GestureDetector(
       onTap: () {
-        // Futuramente: navegar para lista de vídeos do gênero
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Você selecionou: $genero'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        context.push('/videos/$genero');
       },
       child: Container(
         decoration: BoxDecoration(
-          // Gradiente sutil que adapta ao tema
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,

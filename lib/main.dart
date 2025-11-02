@@ -24,6 +24,10 @@ import 'seguranca_config.dart';
 import 'tema_config.dart';
 import 'criapin.dart';
 import 'preferencias_filho.dart';
+import 'video_model_youtube.dart';
+import 'lista_videos_screen_youtube.dart';
+import 'video_player_youtube_screen.dart';
+import 'admin_add_video_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -134,6 +138,29 @@ class BluFlixApp extends StatelessWidget {
         GoRoute(
           path: '/seguranca-config',
           builder: (context, state) => const SegurancaConfigScreen(),
+        ),
+        // Lista de vídeos por gênero (versão YouTube)
+        GoRoute(
+          path: '/videos/:genero',
+          builder: (context, state) {
+            final genero = state.pathParameters['genero']!;
+            return ListaVideosYoutubeScreen(genero: genero); // ✅ Nova versão
+          },
+        ),
+
+        // Player do YouTube
+        GoRoute(
+          path: '/player',
+          builder: (context, state) {
+            final video = state.extra as VideoModelYoutube; // ✅ Modelo YouTube
+            return VideoPlayerYoutubeScreen(video: video); // ✅ Player YouTube
+          },
+        ),
+
+        // Adicionar vídeo (admin) - apenas cola o link
+        GoRoute(
+          path: '/admin-add-video',
+          builder: (context, state) => const AdminAddVideoScreen(),
         ),
         GoRoute(
           path: '/tema-config',

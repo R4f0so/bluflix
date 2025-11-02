@@ -1,14 +1,11 @@
-// lib/gerenciamento_pais.dart
-
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'app_tema.dart';
 import 'perfil_provider.dart';
 import 'widgets/theme_toggle_button.dart';
-import 'pin_verification.dart';
 
 class GerenciamentoPaisScreen extends StatefulWidget {
   const GerenciamentoPaisScreen({super.key});
@@ -19,437 +16,60 @@ class GerenciamentoPaisScreen extends StatefulWidget {
 }
 
 class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
-  bool _isLoading = true;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   List<Map<String, dynamic>> _perfisFilhos = [];
-  Map<String, dynamic>? _perfilPai;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _carregarPerfis();
+    _carregarPerfisFilhos();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _carregarPerfis();
-  }
+  Future<void> _carregarPerfisFilhos() async {
+    setState(() => _isLoading = true);
 
-  Future<void> _carregarPerfis() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-
-        if (userDoc.exists) {
-          final data = userDoc.data();
-
-          if (mounted) {
-            setState(() {
-              _perfilPai = {
-                'apelido': data?['apelido'] ?? 'Usuário',
-                'avatar': data?['avatar'] ?? 'assets/avatar1.png',
-              };
-
-              final perfis = data?['perfisFilhos'] as List<dynamic>? ?? [];
-              _perfisFilhos = perfis
-                  .map((p) => Map<String, dynamic>.from(p))
-                  .toList();
-              _isLoading = false;
-            });
-          }
-        }
-      }
-    } catch (e) {
-      print('Erro ao carregar perfis: $e');
-      if (mounted) {
+      final user = _auth.currentUser;
+      if (user == null) {
+        print('❌ Usuário não autenticado');
         setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _trocarParaPerfilFilho(Map<String, dynamic> perfil) async {
-    final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
-
-    await perfilProvider.setPerfilAtivo(
-      apelido: perfil['apelido'],
-      avatar: perfil['avatar'],
-      isPai: false,
-    );
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Trocado para perfil ${perfil['apelido']}'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    context.go('/catalogo');
-  }
-
-  // ✨ NOVA FUNÇÃO: Mostrar opções de edição
-  void _mostrarOpcoesEdicao(
-    int index,
-    Map<String, dynamic> perfil,
-    AppTema appTema,
-  ) {
-    final apelido = perfil['apelido'] ?? 'Perfil';
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) {
-        return Container(
-          decoration: BoxDecoration(
-            color: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Handle do modal
-                Container(
-                  margin: const EdgeInsets.only(top: 12),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[600],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-
-                // Header com avatar e nome
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundImage: AssetImage(
-                          perfil['avatar'] ?? 'assets/avatar1.png',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              apelido,
-                              style: TextStyle(
-                                color: appTema.textColor,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Perfil Filho',
-                              style: TextStyle(
-                                color: appTema.textSecondaryColor,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const Divider(height: 1),
-
-                // Opção: Editar Preferências
-                ListTile(
-                  leading: Icon(Icons.tune, color: appTema.textColor, size: 24),
-                  title: Text(
-                    'Editar Preferências',
-                    style: TextStyle(
-                      color: appTema.textColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Ajustar interesses e configurações',
-                    style: TextStyle(
-                      color: appTema.textSecondaryColor,
-                      fontSize: 13,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(modalContext);
-                    if (mounted) {
-                      // TODO: Implementar tela de preferências
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Função em desenvolvimento...'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                ),
-
-                const Divider(height: 1),
-
-                // Opção: Excluir Perfil (em vermelho)
-                ListTile(
-                  leading: const Icon(
-                    Icons.delete_outline,
-                    color: Colors.red,
-                    size: 24,
-                  ),
-                  title: const Text(
-                    'Excluir Perfil',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Remover permanentemente este perfil',
-                    style: TextStyle(
-                      color: Colors.red.withValues(alpha: 0.7),
-                      fontSize: 13,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(modalContext);
-                    if (mounted) {
-                      _iniciarExclusaoPerfil(index, perfil);
-                    }
-                  },
-                ),
-
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // ✨ NOVA FUNÇÃO: Iniciar processo de exclusão
-  Future<void> _iniciarExclusaoPerfil(
-    int index,
-    Map<String, dynamic> perfil,
-  ) async {
-    final apelido = perfil['apelido'] ?? 'este perfil';
-
-    if (!mounted) return;
-
-    // Passo 1: Verificar PIN
-    final pinVerificado = await VerificarPinDialog.verificar(context);
-
-    if (!pinVerificado) {
-      return; // Usuário cancelou ou PIN incorreto
-    }
-
-    if (!mounted) return;
-
-    // Passo 2: Confirmar exclusão
-    final appTema = Provider.of<AppTema>(context, listen: false);
-    final confirmar = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.red.withValues(alpha: 0.5), width: 2),
-        ),
-        title: Row(
-          children: [
-            const Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.red,
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Confirmar Exclusão',
-                style: TextStyle(
-                  color: appTema.textColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Deseja realmente excluir o perfil "$apelido"?',
-              style: TextStyle(color: appTema.textColor, fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.red.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline, color: Colors.red, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Esta ação não pode ser desfeita.',
-                      style: TextStyle(color: appTema.textColor, fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            style: TextButton.styleFrom(
-              foregroundColor: appTema.textSecondaryColor,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text(
-              'Excluir',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmar == true) {
-      await _excluirPerfil(index, apelido);
-    }
-  }
-
-  // ✨ NOVA FUNÇÃO: Excluir perfil do Firestore
-  Future<void> _excluirPerfil(int index, String apelidoExcluido) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
-      print("════════════════════════════════");
-      print("🗑️ EXCLUINDO PERFIL FILHO");
-      print("   Índice: $index");
-      print("   Apelido: $apelidoExcluido");
-      print("════════════════════════════════");
-
-      // Remove da lista local
-      _perfisFilhos.removeAt(index);
-
-      // Atualiza no Firestore
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
-        {'perfisFilhos': _perfisFilhos},
-      );
-
-      print("   ✅ Perfil excluído com sucesso!");
-      print("════════════════════════════════");
-
-      if (!mounted) return;
-
-      // Verifica se o perfil excluído era o ativo
-      final perfilProvider = Provider.of<PerfilProvider>(
-        context,
-        listen: false,
-      );
-
-      if (perfilProvider.perfilAtivoApelido == apelidoExcluido) {
-        // Se o perfil excluído era o ativo, volta para o perfil pai
-        await perfilProvider.setPerfilAtivo(
-          apelido: _perfilPai?['apelido'] ?? 'Usuário',
-          avatar: _perfilPai?['avatar'] ?? 'assets/avatar1.png',
-          isPai: true,
-        );
-
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Perfil excluído! Voltando para o perfil principal.'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      } else {
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Perfil "$apelidoExcluido" excluído com sucesso!'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        return;
       }
 
-      // Atualiza a UI
-      if (mounted) {
-        setState(() {});
-      }
+      print('🔍 Buscando perfis filhos para userId: ${user.uid}');
+
+      final snapshot = await _firestore
+          .collection('perfis_filhos')
+          .where('userId', isEqualTo: user.uid)
+          .get();
+
+      print('📊 Total de perfis filhos encontrados: ${snapshot.docs.length}');
+
+      setState(() {
+        _perfisFilhos = snapshot.docs.map((doc) {
+          final data = doc.data();
+          print('✅ Perfil encontrado: ${data['apelido']} (ID: ${doc.id})');
+          return {'id': doc.id, ...data};
+        }).toList();
+        _isLoading = false;
+      });
+
+      print('✅ Perfis filhos carregados: ${_perfisFilhos.length}');
     } catch (e) {
-      print("════════════════════════════════");
-      print("❌ ERRO AO EXCLUIR PERFIL: $e");
-      print("════════════════════════════════");
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao excluir: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
-        ),
-      );
+      print('❌ Erro ao carregar perfis filhos: $e');
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final appTema = Provider.of<AppTema>(context);
-
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: appTema.backgroundColor,
-        body: Center(
-          child: CircularProgressIndicator(color: const Color(0xFFA9DBF4)),
-        ),
-      );
-    }
-
-    final bool limiteAtingido = _perfisFilhos.length >= 4;
+    final perfilProvider = Provider.of<PerfilProvider>(context);
+    final userName = perfilProvider.perfilAtivoApelido ?? 'Usuário';
+    final userAvatar = perfilProvider.perfilAtivoAvatar ?? 'assets/avatar1.png';
 
     return Scaffold(
       body: Container(
@@ -462,246 +82,227 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              // AppBar
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
+          child: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(color: Color(0xFFA9DBF4)),
+                )
+              : Column(
                   children: [
-                    Image.asset("assets/logo.png", height: 40),
-                    const Spacer(),
-                    const ThemeToggleButton(showLogo: false),
-                    IconButton(
-                      onPressed: () async {
-                        await context.push('/perfil-configs');
-                        if (mounted) {
-                          _carregarPerfis();
-                        }
-                      },
-                      icon: Icon(
-                        Icons.settings,
-                        color: appTema.textColor,
-                        size: 28,
-                      ),
-                      tooltip: 'Configurações',
-                    ),
-                  ],
-                ),
-              ),
-
-              // Informações do Perfil Pai
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundImage: AssetImage(
-                        _perfilPai?['avatar'] ?? 'assets/avatar1.png',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _perfilPai?['apelido'] ?? 'Usuário',
-                      style: TextStyle(
-                        color: appTema.textColor,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Perfil Pai',
-                      style: TextStyle(
-                        color: appTema.textColor.withValues(alpha: 0.7),
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              // Título da seção de perfis filhos
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: Row(
-                  children: [
-                    Text(
-                      'Perfis Filhos',
-                      style: TextStyle(
-                        color: appTema.textColor,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '(${_perfisFilhos.length}/4)',
-                      style: TextStyle(
-                        color: appTema.textColor.withValues(alpha: 0.6),
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Lista de perfis filhos
-              Expanded(
-                child: _perfisFilhos.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.people_outline,
-                              size: 80,
-                              color: appTema.textColor.withValues(alpha: 0.3),
+                    // ═══════════════════════════════════════════════════
+                    // APPBAR COM SETA VOLTAR, AVATAR E TOGGLE TEMA
+                    // ═══════════════════════════════════════════════════
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          const Spacer(),
+                          const ThemeToggleButton(),
+                          const SizedBox(width: 8),
+                          // Avatar clicável (menu)
+                          GestureDetector(
+                            onTap: _mostrarMenuPerfil,
+                            child: CircleAvatar(
+                              radius: 20,
+                              backgroundImage: AssetImage(userAvatar),
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Nenhum perfil filho criado',
-                              style: TextStyle(
-                                color: appTema.textColor.withValues(alpha: 0.6),
-                                fontSize: 18,
-                              ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // ═══════════════════════════════════════════════════
+                    // AVATAR E SAUDAÇÃO DO PERFIL PAI
+                    // ═══════════════════════════════════════════════════
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      child: Row(
+                        children: [
+                          // Avatar do perfil pai
+                          CircleAvatar(
+                            radius: 30,
+                            backgroundImage: AssetImage(userAvatar),
+                          ),
+                          const SizedBox(width: 16),
+                          // Saudação
+                          Text(
+                            'Olá, $userName!',
+                            style: TextStyle(
+                              color: appTema.textColor,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Toque no + para adicionar',
-                              style: TextStyle(
-                                color: appTema.textColor.withValues(alpha: 0.4),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // ═══════════════════════════════════════════════════
+                    // TÍTULO - GERENCIAR PERFIS
+                    // ═══════════════════════════════════════════════════
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Gerenciar Perfis Filhos',
+                          style: TextStyle(
+                            color: appTema.textColor,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      )
-                    : SingleChildScrollView(
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ═══════════════════════════════════════════════════
+                    // GRADE DE PERFIS FILHOS
+                    // ═══════════════════════════════════════════════════
+                    Expanded(
+                      child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Wrap(
-                          spacing: 16,
-                          runSpacing: 16,
-                          children: [
-                            ..._perfisFilhos.asMap().entries.map(
-                              (entry) => _buildPerfilCard(
-                                entry.value,
-                                entry.key,
-                                appTema,
-                              ),
-                            ),
-                            if (!limiteAtingido)
-                              GestureDetector(
-                                onTap: () async {
-                                  await context.push('/adicionar-perfis');
-                                  if (mounted) {
-                                    _carregarPerfis();
+                        child: _perfisFilhos.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.family_restroom,
+                                      size: 80,
+                                      color: appTema.textSecondaryColor,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Nenhum perfil filho criado',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: appTema.textColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Toque no botão abaixo para adicionar',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: appTema.textSecondaryColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : GridView.builder(
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2,
+                                      crossAxisSpacing: 16,
+                                      mainAxisSpacing: 16,
+                                      childAspectRatio: 0.85,
+                                    ),
+                                itemCount: _perfisFilhos.length + 1,
+                                itemBuilder: (context, index) {
+                                  // Card "Adicionar Familiar"
+                                  if (index == _perfisFilhos.length) {
+                                    return _buildCardAdicionarFamiliar(appTema);
                                   }
-                                },
-                                child: _buildAdicionarCard(appTema),
-                              ),
-                          ],
-                        ),
-                      ),
-              ),
 
-              // Botão adicionar (quando não há perfis)
-              if (_perfisFilhos.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: SizedBox(
-                    width: 200,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        await context.push('/adicionar-perfis');
-                        if (mounted) {
-                          _carregarPerfis();
-                        }
-                      },
-                      icon: const Icon(Icons.add, size: 24),
-                      label: const Text(
-                        'Adicionar Perfil',
-                        style: TextStyle(fontSize: 16),
+                                  // Card de perfil filho
+                                  final perfil = _perfisFilhos[index];
+                                  return _buildCardPerfilFilho(perfil, appTema);
+                                },
+                              ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFA9DBF4),
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    ),
+
+                    // ═══════════════════════════════════════════════════
+                    // BOTÃO: VER CATÁLOGO COMPLETO
+                    // ═══════════════════════════════════════════════════
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton.icon(
+                          onPressed: () => context.go('/catalogo'),
+                          icon: const Icon(Icons.video_library, size: 24),
+                          label: const Text(
+                            'Ver Catálogo Completo',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFA9DBF4),
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 4,
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-            ],
-          ),
         ),
       ),
     );
   }
 
-  // ✨ ATUALIZADO: Card com botão "Editar"
-  Widget _buildPerfilCard(
-    Map<String, dynamic> perfil,
-    int index,
-    AppTema appTema,
-  ) {
+  // ═══════════════════════════════════════════════════════════════
+  // WIDGET: CARD ADICIONAR FAMILIAR
+  // ═══════════════════════════════════════════════════════════════
+  Widget _buildCardAdicionarFamiliar(AppTema appTema) {
     return GestureDetector(
-      onTap: () => _trocarParaPerfilFilho(perfil),
+      onTap: () async {
+        await context.push('/adicionar-perfis'); // ✅ CORRIGIDO
+        if (!mounted) return; // ✅ ADICIONADO
+        _carregarPerfisFilhos(); // Recarrega após adicionar
+      },
       child: Container(
-        width: 160,
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: appTema.isDarkMode
-              ? Colors.white.withValues(alpha: 0.1)
-              : Colors.white.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: appTema.isDarkMode
+                ? [
+                    Colors.white.withValues(alpha: 0.15),
+                    Colors.white.withValues(alpha: 0.08),
+                  ]
+                : [
+                    Colors.black.withValues(alpha: 0.08),
+                    Colors.black.withValues(alpha: 0.05),
+                  ],
+          ),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: appTema.isDarkMode ? Colors.white24 : Colors.black12,
-            width: 1,
+            color: appTema.isDarkMode
+                ? Colors.white.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.15),
+            width: 2,
+            style: BorderStyle.solid,
           ),
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundImage: AssetImage(
-                perfil['avatar'] ?? 'assets/avatar1.png',
-              ),
-            ),
+            Icon(Icons.add_circle_outline, size: 60, color: appTema.textColor),
             const SizedBox(height: 12),
             Text(
-              perfil['apelido'] ?? 'Perfil',
+              'Adicionar\nFamiliar',
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color: appTema.textColor,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: () {
-                _mostrarOpcoesEdicao(index, perfil, appTema);
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: appTema.textColor,
-                side: BorderSide(
-                  color: appTema.textColor.withValues(alpha: 0.5),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('Editar', style: TextStyle(fontSize: 12)),
             ),
           ],
         ),
@@ -709,41 +310,495 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
     );
   }
 
-  Widget _buildAdicionarCard(AppTema appTema) {
-    return Container(
-      width: 160,
-      height: 200,
-      decoration: BoxDecoration(
-        color: appTema.isDarkMode
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.white.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFA9DBF4),
-          width: 2,
-          style: BorderStyle.solid,
+  // ═══════════════════════════════════════════════════════════════
+  // WIDGET: CARD PERFIL FILHO
+  // ═══════════════════════════════════════════════════════════════
+  Widget _buildCardPerfilFilho(Map<String, dynamic> perfil, AppTema appTema) {
+    final apelido = perfil['apelido'] ?? 'Perfil';
+    final avatar = perfil['avatar'] ?? 'assets/avatar1.png';
+
+    return GestureDetector(
+      onTap: () => _selecionarPerfilFilho(perfil),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: appTema.isDarkMode
+                ? [
+                    Colors.white.withValues(alpha: 0.15),
+                    Colors.white.withValues(alpha: 0.08),
+                  ]
+                : [
+                    Colors.black.withValues(alpha: 0.08),
+                    Colors.black.withValues(alpha: 0.05),
+                  ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: appTema.isDarkMode
+                ? Colors.white.withValues(alpha: 0.25)
+                : Colors.black.withValues(alpha: 0.15),
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Avatar
+            CircleAvatar(radius: 40, backgroundImage: AssetImage(avatar)),
+
+            const SizedBox(height: 12),
+
+            // Nome do perfil
+            Text(
+              apelido,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: appTema.textColor,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Botão Editar
+            ElevatedButton(
+              onPressed: () => _mostrarOpcoesEdicao(perfil),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFA9DBF4),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: const Text(
+                'Editar',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
         ),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.add_circle_outline,
-            size: 60,
-            color: Color(0xFFA9DBF4),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Adicionar\nPerfil',
-            style: TextStyle(
-              color: appTema.textColor,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // AÇÕES: MENU DE PERFIL (AVATAR) - IGUAL AO CATALOGO.DART
+  // ═══════════════════════════════════════════════════════════════
+  void _mostrarMenuPerfil() {
+    final appTema = Provider.of<AppTema>(context, listen: false);
+    final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
+    final userName = perfilProvider.perfilAtivoApelido ?? 'Usuário';
+    final userAvatar = perfilProvider.perfilAtivoAvatar ?? 'assets/avatar1.png';
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (BuildContext context) {
+        return Dialog(
+          alignment: Alignment.topRight,
+          insetPadding: const EdgeInsets.only(top: 70, right: 20),
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: 280,
+            decoration: BoxDecoration(
+              color: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-            textAlign: TextAlign.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Cabeçalho com avatar e nome
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: appTema.isDarkMode
+                        ? Colors.grey[850]
+                        : Colors.grey[100],
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundImage: AssetImage(userAvatar),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              userName,
+                              style: TextStyle(
+                                color: appTema.textColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              perfilProvider.isPerfilPai
+                                  ? 'Perfil Principal'
+                                  : 'Perfil Filho',
+                              style: TextStyle(
+                                color: appTema.textSecondaryColor,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Itens do menu
+                _buildMenuItem(
+                  icon: Icons.account_circle_outlined,
+                  label: 'Mudar Avatar',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/mudar-avatar');
+                  },
+                ),
+                _buildMenuItem(
+                  icon: Icons.people_outline,
+                  label: 'Mudar Perfil',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/mudar-perfil');
+                  },
+                ),
+                _buildMenuItem(
+                  icon: Icons.person_add_outlined,
+                  label: 'Adicionar Familiar',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await context.push('/adicionar-perfis');
+                    if (!mounted) return; // ✅ ADICIONADO
+                    _carregarPerfisFilhos();
+                  },
+                ),
+                _buildMenuItem(
+                  icon: Icons.settings_outlined,
+                  label: 'Configurações',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/perfil-configs');
+                  },
+                ),
+
+                const Divider(height: 1),
+
+                _buildMenuItem(
+                  icon: Icons.logout,
+                  label: 'Sair',
+                  isDestructive: true,
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    _realizarLogout();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // AÇÕES: OPÇÕES DE EDIÇÃO DO PERFIL FILHO
+  // ═══════════════════════════════════════════════════════════════
+  void _mostrarOpcoesEdicao(Map<String, dynamic> perfil) {
+    final appTema = Provider.of<AppTema>(context, listen: false);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildMenuItem(
+              icon: Icons.favorite,
+              label: 'Editar Preferências',
+              isDarkMode: appTema.isDarkMode,
+              onTap: () async {
+                Navigator.pop(context);
+                await context.push('/definir-generos-favoritos');
+                if (!mounted) return; // ✅ ADICIONADO
+                _carregarPerfisFilhos();
+              },
+            ),
+            _buildMenuItem(
+              icon: Icons.delete,
+              label: 'Excluir Perfil',
+              isDarkMode: appTema.isDarkMode,
+              onTap: () {
+                Navigator.pop(context);
+                _mostrarDialogoExcluirPerfilFilho(perfil['id']);
+              },
+              isDestructive: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // WIDGET: ITEM DO MENU
+  // ═══════════════════════════════════════════════════════════════
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String label,
+    required bool isDarkMode,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    final color = isDestructive
+        ? Colors.red
+        : (isDarkMode ? Colors.white : Colors.black);
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(width: 14),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // AÇÕES: SELECIONAR PERFIL FILHO
+  // ═══════════════════════════════════════════════════════════════
+  Future<void> _selecionarPerfilFilho(Map<String, dynamic> perfil) async {
+    // Obtém o provider ANTES de qualquer await
+    final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
+
+    // Solicita PIN
+    final pinCorreto = await _solicitarPIN(perfil['pin']);
+    if (!pinCorreto) {
+      if (!mounted) return;
+      _mostrarMensagem('PIN incorreto!');
+      return;
+    }
+
+    // Define o perfil ativo
+    await perfilProvider.setPerfilAtivo(
+      apelido: perfil['apelido'],
+      avatar: perfil['avatar'],
+      isPai: false,
+    );
+
+    if (!mounted) return;
+    context.go('/catalogo');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // DIÁLOGOS
+  // ═══════════════════════════════════════════════════════════════
+  Future<bool> _solicitarPIN(String pinCorreto) async {
+    if (!mounted) return false; // ✅ VERIFICAÇÃO ANTES DE USAR CONTEXT
+
+    final pinController = TextEditingController();
+    final resultado = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Digite o PIN'),
+        content: TextField(
+          controller: pinController,
+          keyboardType: TextInputType.number,
+          maxLength: 4,
+          obscureText: true,
+          decoration: const InputDecoration(hintText: '****', counterText: ''),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              final pinDigitado = pinController.text;
+              Navigator.pop(context, pinDigitado == pinCorreto);
+            },
+            child: const Text('OK'),
           ),
         ],
       ),
+    );
+
+    return resultado ?? false;
+  }
+
+  void _mostrarDialogoExcluirPerfilFilho(String perfilId) async {
+    // Solicita o PIN do perfil PAI (não do filho)
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    // Buscar o PIN do perfil pai
+    String? pinPai;
+    try {
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      pinPai = userDoc.data()?['pin'];
+    } catch (e) {
+      _mostrarMensagem('Erro ao verificar PIN: $e');
+      return;
+    }
+
+    if (pinPai == null) {
+      _mostrarMensagem('PIN do perfil pai não encontrado');
+      return;
+    }
+
+    // Solicita o PIN
+    if (!mounted) return;
+    final pinCorreto = await _solicitarPINExclusao(pinPai);
+    if (!pinCorreto) {
+      _mostrarMensagem('PIN incorreto!');
+      return;
+    }
+
+    // Se o PIN estiver correto, mostra confirmação final
+    if (!mounted) return; // ✅ VERIFICAÇÃO ANTES DE USAR CONTEXT
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir Perfil Filho'),
+        content: const Text(
+          'Tem certeza que deseja excluir este perfil? Esta ação não pode ser desfeita.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final sucesso = await _excluirPerfilFilho(perfilId);
+              if (sucesso) {
+                _carregarPerfisFilhos();
+              }
+            },
+            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool> _solicitarPINExclusao(String pinCorreto) async {
+    if (!mounted) return false; // ✅ VERIFICAÇÃO ANTES DE USAR CONTEXT
+
+    final pinController = TextEditingController();
+    final resultado = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Digite seu PIN'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Digite o PIN do perfil pai para confirmar a exclusão'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: pinController,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              obscureText: true,
+              decoration: const InputDecoration(
+                hintText: '****',
+                counterText: '',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              final pinDigitado = pinController.text;
+              Navigator.pop(context, pinDigitado == pinCorreto);
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+
+    return resultado ?? false;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // AÇÕES PRINCIPAIS
+  // ═══════════════════════════════════════════════════════════════
+  Future<bool> _excluirPerfilFilho(String perfilId) async {
+    try {
+      await _firestore.collection('perfis_filhos').doc(perfilId).delete();
+      _mostrarMensagem('Perfil filho excluído com sucesso!');
+      return true;
+    } catch (e) {
+      _mostrarMensagem('Erro ao excluir perfil filho: $e');
+      return false;
+    }
+  }
+
+  Future<void> _realizarLogout() async {
+    try {
+      await _auth.signOut();
+      if (!mounted) return;
+      context.go('/login');
+    } catch (e) {
+      _mostrarMensagem('Erro ao sair: $e');
+    }
+  }
+
+  void _mostrarMensagem(String mensagem) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), duration: const Duration(seconds: 3)),
     );
   }
 }
