@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'app_tema.dart';
 import 'widgets/theme_toggle_button.dart';
+import 'services/pin_service.dart';
 
 class SegurancaConfigScreen extends StatefulWidget {
   const SegurancaConfigScreen({super.key});
@@ -35,18 +34,13 @@ class _SegurancaConfigScreenState extends State<SegurancaConfigScreen> {
 
   Future<void> _carregarPinAtual() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
+      final pinService = PinService();
+      final temPin = await pinService.temPinConfigurado();
 
-        if (userDoc.exists) {
-          setState(() {
-            _pinAtual = userDoc.data()?['pin'];
-          });
-        }
+      if (mounted) {
+        setState(() {
+          _pinAtual = temPin ? 'CONFIGURADO' : null;
+        });
       }
     } catch (e) {
       print('Erro ao carregar PIN: $e');
@@ -75,15 +69,15 @@ class _SegurancaConfigScreenState extends State<SegurancaConfigScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .update({'pin': pin});
+      final pinService = PinService();
 
-        if (!mounted) return;
+      // Se já tem PIN, precisa alterar (não implementado aqui)
+      // Se não tem PIN, cria novo
+      final sucesso = await pinService.criarPinPerfilPai(pin);
 
+      if (!mounted) return;
+
+      if (sucesso) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('PIN configurado com sucesso!'),
@@ -92,6 +86,8 @@ class _SegurancaConfigScreenState extends State<SegurancaConfigScreen> {
         );
 
         context.pop();
+      } else {
+        _mostrarErro('Erro ao salvar PIN');
       }
     } catch (e) {
       _mostrarErro('Erro ao salvar PIN: ${e.toString()}');
@@ -101,60 +97,106 @@ class _SegurancaConfigScreenState extends State<SegurancaConfigScreen> {
   }
 
   Future<void> _removerPin() async {
+    // Mostra diálogo de confirmação
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (context) {
-        final appTema = Provider.of<AppTema>(context, listen: false);
-        return AlertDialog(
-          backgroundColor: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
-          title: Text(
-            'Remover PIN',
-            style: TextStyle(color: appTema.textColor),
+      builder: (context) => AlertDialog(
+        title: const Text('Remover PIN?'),
+        content: const Text(
+          'Tem certeza que deseja remover o PIN de segurança? '
+          'Você precisará digitar o PIN atual para confirmar.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
           ),
-          content: Text(
-            'Deseja realmente remover o PIN de segurança?',
-            style: TextStyle(color: appTema.textSecondaryColor),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Remover', style: TextStyle(color: Colors.red)),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Remover', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
+
+    // ✅ Verifica se o widget ainda está montado
+    if (!mounted) return;
 
     if (confirmar == true) {
       setState(() => _isLoading = true);
 
       try {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .update({'pin': FieldValue.delete()});
+        // Solicita PIN para confirmar
+        final pinController = TextEditingController();
 
-          if (!mounted) return;
+        final pin = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Digite seu PIN'),
+            content: TextField(
+              controller: pinController,
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 24,
+                letterSpacing: 8,
+                fontWeight: FontWeight.bold,
+              ),
+              decoration: InputDecoration(
+                counterText: '',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, pinController.text),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
 
+        // ✅ Verifica mounted novamente
+        if (!mounted) return;
+
+        if (pin == null || pin.isEmpty) {
+          setState(() => _isLoading = false);
+          return;
+        }
+
+        final pinService = PinService();
+        final sucesso = await pinService.removerPinPerfilPai(pin);
+
+        if (!mounted) return;
+
+        if (sucesso) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('PIN removido com sucesso!'),
               backgroundColor: Colors.green,
             ),
           );
-
           context.pop();
+        } else {
+          _mostrarErro('PIN incorreto ou erro ao remover');
         }
       } catch (e) {
+        if (!mounted) return; // ✅ Verifica antes de mostrar erro
         _mostrarErro('Erro ao remover PIN: ${e.toString()}');
       } finally {
-        setState(() => _isLoading = false);
+        if (mounted) {
+          // ✅ Verifica antes de setState
+          setState(() => _isLoading = false);
+        }
       }
     }
   }

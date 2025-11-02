@@ -36,6 +36,7 @@ dependencies:
   cloud_firestore: ^6.0.2
   provider: ^6.1.2
   shared_preferences: ^2.2.2
+  crypto: ^3.0.6
 
   # opcional para armazenamento seguro local
   flutter_secure_storage: ^9.2.4

@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Funções auxiliares
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() 
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // Usuários
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // Perfis filhos
+    match /perfis_filhos/{perfilId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAuthenticated() 
+        && request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Vídeos (somente admin pode adicionar)
+    match /videos/{videoId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}

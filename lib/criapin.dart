@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'app_tema.dart';
 import 'widgets/theme_toggle_button.dart';
+import 'services/pin_service.dart';
 
 class CriaPinScreen extends StatefulWidget {
   final String apelido;
@@ -66,15 +67,22 @@ class _CriaPinScreenState extends State<CriaPinScreen> {
       print("   Avatar: ${widget.avatar}");
       print("════════════════════════════════");
 
-      // Salva o perfil pai com PIN no Firestore
+      // ✅ NOVO: Usa o PinService para hash seguro
+      final pinService = PinService();
+      final sucesso = await pinService.criarPinPerfilPai(pin);
+
+      if (!sucesso) {
+        throw Exception('Falha ao criar PIN');
+      }
+
+      // Salva o perfil pai (sem o PIN, que já foi salvo pelo PinService)
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
         'email': user.email,
         'apelido': widget.apelido,
         'avatar': widget.avatar,
-        'pin': pin, // ⚠️ Em produção, considere criptografar o PIN
         'perfisFilhos': [],
         'criadoEm': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
 
       print("   ✅ Perfil pai e PIN salvos no Firestore");
       print("════════════════════════════════");

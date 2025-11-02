@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'app_tema.dart';
+import 'services/pin_service.dart';
 
 class VerificarPinDialog {
   static Future<bool> verificar(BuildContext context) async {
@@ -48,27 +49,21 @@ class _PinDialogContentState extends State<_PinDialogContent> {
     });
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
+      // ✅ NOVO: Usa o PinService para verificação segura
+      final pinService = PinService();
+      final pinCorreto = await pinService.verificarPinPerfilPai(pin);
 
-        final pinSalvo = userDoc.data()?['pin'];
+      if (!mounted) return;
 
-        if (!mounted) return;
-
-        if (pinSalvo == pin) {
-          // PIN correto
-          Navigator.of(context).pop(true);
-        } else {
-          // PIN incorreto
-          setState(() {
-            _errorMessage = 'PIN incorreto';
-            _isLoading = false;
-          });
-        }
+      if (pinCorreto) {
+        // PIN correto
+        Navigator.of(context).pop(true);
+      } else {
+        // PIN incorreto
+        setState(() {
+          _errorMessage = 'PIN incorreto';
+          _isLoading = false;
+        });
       }
     } catch (e) {
       if (!mounted) return;
