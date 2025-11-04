@@ -1,3 +1,4 @@
+import 'package:bluflix/admin_gerenciar_videos_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -29,6 +30,7 @@ import 'lista_videos_screen_youtube.dart';
 import 'video_player_youtube_screen.dart';
 import 'admin_add_video_screen.dart';
 import 'admin_listar_videos_screen.dart';
+import 'editar_perfil_filho.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -148,6 +150,17 @@ class BluFlixApp extends StatelessWidget {
             return ListaVideosYoutubeScreen(genero: genero); // ✅ Nova versão
           },
         ),
+        // Editar perfil filho
+        GoRoute(
+          path: '/editar-perfil-filho',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>;
+            return EditarPerfilFilhoScreen(
+              perfilIndex: extra['perfilIndex'] as int,
+              perfilAtual: extra['perfilAtual'] as Map<String, dynamic>,
+            );
+          },
+        ),
 
         // Player do YouTube
         GoRoute(
@@ -156,6 +169,18 @@ class BluFlixApp extends StatelessWidget {
             final video = state.extra as VideoModelYoutube; // ✅ Modelo YouTube
             return VideoPlayerYoutubeScreen(video: video); // ✅ Player YouTube
           },
+        ),
+        // 🎬 ROTAS ADMIN - Gerenciamento de Vídeos
+        GoRoute(
+          path: '/admin/gerenciar-videos',
+          name: 'admin-gerenciar-videos',
+          builder: (context, state) => const AdminGerenciarVideosScreen(),
+        ),
+
+        GoRoute(
+          path: '/admin/adicionar-video',
+          name: 'admin-adicionar-video',
+          builder: (context, state) => const AdminAddVideoScreen(),
         ),
 
         // Adicionar vídeo (admin) - apenas cola o link

@@ -7,6 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 ///
 /// Este serviço usa SHA-256 para hash de PINs, garantindo que
 /// os PINs nunca sejam armazenados em texto plano no Firestore.
+///
+/// ✅ ATUALIZADO: Apenas gerencia PIN do perfil PAI (array não tem PIN próprio)
 class PinService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -25,7 +27,7 @@ class PinService {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // CRIAR PIN
+  // CRIAR PIN (APENAS PERFIL PAI)
   // ═══════════════════════════════════════════════════════════════
 
   /// Cria um novo PIN para o usuário atual (perfil pai)
@@ -64,39 +66,8 @@ class PinService {
     }
   }
 
-  /// Cria um PIN para um perfil filho específico
-  ///
-  /// **IMPORTANTE**: Perfis filhos têm seus próprios PINs opcionais
-  Future<bool> criarPinPerfilFilho(String perfilFilhoId, String pin) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return false;
-
-      if (!_validarPin(pin)) return false;
-
-      final pinHash = _hashPin(pin);
-
-      // Atualiza o perfil filho com o PIN hash
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('perfis_filhos')
-          .doc(perfilFilhoId)
-          .update({
-            'pinHash': pinHash,
-            'pinCriadoEm': FieldValue.serverTimestamp(),
-          });
-
-      print('✅ PIN criado para perfil filho $perfilFilhoId');
-      return true;
-    } catch (e) {
-      print('❌ Erro ao criar PIN para perfil filho: $e');
-      return false;
-    }
-  }
-
   // ═══════════════════════════════════════════════════════════════
-  // VERIFICAR PIN
+  // VERIFICAR PIN (APENAS PERFIL PAI)
   // ═══════════════════════════════════════════════════════════════
 
   /// Verifica se o PIN fornecido corresponde ao PIN do perfil pai
@@ -140,32 +111,6 @@ class PinService {
       return pinCorreto;
     } catch (e) {
       print('❌ Erro ao verificar PIN: $e');
-      return false;
-    }
-  }
-
-  /// Verifica se o PIN fornecido corresponde ao PIN de um perfil filho
-  Future<bool> verificarPinPerfilFilho(String perfilFilhoId, String pin) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return false;
-
-      final perfilDoc = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('perfis_filhos')
-          .doc(perfilFilhoId)
-          .get();
-
-      if (!perfilDoc.exists) return false;
-
-      final pinHashSalvo = perfilDoc.data()?['pinHash'] as String?;
-      if (pinHashSalvo == null) return false;
-
-      final pinHashFornecido = _hashPin(pin);
-      return pinHashFornecido == pinHashSalvo;
-    } catch (e) {
-      print('❌ Erro ao verificar PIN do perfil filho: $e');
       return false;
     }
   }

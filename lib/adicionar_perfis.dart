@@ -241,8 +241,10 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
       final perfilExcluido = _perfisFilhos[index];
       final apelidoExcluido = perfilExcluido['apelido'];
 
+      // ✅ Remove do array local
       _perfisFilhos.removeAt(index);
 
+      // ✅ Atualiza no Firestore
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
         {'perfisFilhos': _perfisFilhos},
       );

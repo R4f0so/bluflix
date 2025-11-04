@@ -103,7 +103,7 @@ class _PreferenciasFilhoScreenState extends State<PreferenciasFilhoScreen> {
       final novoPerfilFilho = {
         'apelido': widget.apelido,
         'avatar': widget.avatar,
-        'interesses': generosSelecionados, // ✅ Salva as preferências
+        'interesses': generosSelecionados, // ✅ Padronizado como 'interesses'
         'criadoEm': Timestamp.now(),
       };
 

@@ -70,7 +70,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             } else {
               // Perfil filho vê apenas os gêneros das preferências
               final perfisFilhos =
-                  data?['perfis_filhos'] as List<dynamic>? ?? [];
+                  data?['perfisFilhos'] as List<dynamic>? ?? [];
 
               final perfilFilhoAtual = perfisFilhos.firstWhere(
                 (perfil) =>
@@ -79,10 +79,10 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               );
 
               if (perfilFilhoAtual != null) {
-                final generosFavoritos =
-                    perfilFilhoAtual['generosFavoritos'] as List<dynamic>? ??
-                    [];
-                _generosVisiveis = List<String>.from(generosFavoritos);
+                // ✅ PADRONIZADO: usa 'interesses'
+                final interesses =
+                    perfilFilhoAtual['interesses'] as List<dynamic>? ?? [];
+                _generosVisiveis = List<String>.from(interesses);
               }
             }
           }

@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'app_tema.dart';
 import 'perfil_provider.dart';
 import 'widgets/theme_toggle_button.dart';
+import 'pin_verification.dart';
 
 class GerenciamentoPaisScreen extends StatefulWidget {
   const GerenciamentoPaisScreen({super.key});
@@ -28,6 +29,7 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
     _carregarPerfisFilhos();
   }
 
+  // ✅ CORRIGIDO: Lê do array perfisFilhos
   Future<void> _carregarPerfisFilhos() async {
     setState(() => _isLoading = true);
 
@@ -41,19 +43,24 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
 
       print('🔍 Buscando perfis filhos para userId: ${user.uid}');
 
-      final snapshot = await _firestore
-          .collection('perfis_filhos')
-          .where('userId', isEqualTo: user.uid)
-          .get();
+      // ✅ Lê do documento do usuário (array)
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
 
-      print('📊 Total de perfis filhos encontrados: ${snapshot.docs.length}');
+      if (!userDoc.exists) {
+        print('❌ Documento do usuário não encontrado');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final data = userDoc.data();
+      final perfisFilhos = data?['perfisFilhos'] as List<dynamic>? ?? [];
+
+      print('📊 Total de perfis filhos encontrados: ${perfisFilhos.length}');
 
       setState(() {
-        _perfisFilhos = snapshot.docs.map((doc) {
-          final data = doc.data();
-          print('✅ Perfil encontrado: ${data['apelido']} (ID: ${doc.id})');
-          return {'id': doc.id, ...data};
-        }).toList();
+        _perfisFilhos = perfisFilhos
+            .map((perfil) => Map<String, dynamic>.from(perfil))
+            .toList();
         _isLoading = false;
       });
 
@@ -88,9 +95,7 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                 )
               : Column(
                   children: [
-                    // ═══════════════════════════════════════════════════
-                    // APPBAR COM SETA VOLTAR, AVATAR E TOGGLE TEMA
-                    // ═══════════════════════════════════════════════════
+                    // AppBar
                     Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Row(
@@ -98,7 +103,6 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                           const Spacer(),
                           const ThemeToggleButton(),
                           const SizedBox(width: 8),
-                          // Avatar clicável (menu)
                           GestureDetector(
                             onTap: _mostrarMenuPerfil,
                             child: CircleAvatar(
@@ -110,9 +114,7 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                       ),
                     ),
 
-                    // ═══════════════════════════════════════════════════
-                    // AVATAR E SAUDAÇÃO DO PERFIL PAI
-                    // ═══════════════════════════════════════════════════
+                    // Avatar e Saudação
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
@@ -120,13 +122,11 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                       ),
                       child: Row(
                         children: [
-                          // Avatar do perfil pai
                           CircleAvatar(
                             radius: 30,
                             backgroundImage: AssetImage(userAvatar),
                           ),
                           const SizedBox(width: 16),
-                          // Saudação
                           Text(
                             'Olá, $userName!',
                             style: TextStyle(
@@ -141,9 +141,7 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
 
                     const SizedBox(height: 20),
 
-                    // ═══════════════════════════════════════════════════
-                    // TÍTULO - GERENCIAR PERFIS
-                    // ═══════════════════════════════════════════════════
+                    // Título
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Align(
@@ -161,9 +159,7 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
 
                     const SizedBox(height: 16),
 
-                    // ═══════════════════════════════════════════════════
-                    // GRADE DE PERFIS FILHOS
-                    // ═══════════════════════════════════════════════════
+                    // Grade de perfis
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -207,22 +203,22 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                                     ),
                                 itemCount: _perfisFilhos.length + 1,
                                 itemBuilder: (context, index) {
-                                  // Card "Adicionar Familiar"
                                   if (index == _perfisFilhos.length) {
                                     return _buildCardAdicionarFamiliar(appTema);
                                   }
 
-                                  // Card de perfil filho
                                   final perfil = _perfisFilhos[index];
-                                  return _buildCardPerfilFilho(perfil, appTema);
+                                  return _buildCardPerfilFilho(
+                                    perfil,
+                                    appTema,
+                                    index,
+                                  );
                                 },
                               ),
                       ),
                     ),
 
-                    // ═══════════════════════════════════════════════════
-                    // BOTÃO: VER CATÁLOGO COMPLETO
-                    // ═══════════════════════════════════════════════════
+                    // Botão Ver Catálogo
                     Padding(
                       padding: const EdgeInsets.all(20),
                       child: SizedBox(
@@ -257,14 +253,15 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // WIDGET: CARD ADICIONAR FAMILIAR
+  // WIDGETS
   // ═══════════════════════════════════════════════════════════════
+
   Widget _buildCardAdicionarFamiliar(AppTema appTema) {
     return GestureDetector(
       onTap: () async {
-        await context.push('/adicionar-perfis'); // ✅ CORRIGIDO
-        if (!mounted) return; // ✅ ADICIONADO
-        _carregarPerfisFilhos(); // Recarrega após adicionar
+        await context.push('/adicionar-perfis');
+        if (!mounted) return;
+        _carregarPerfisFilhos();
       },
       child: Container(
         decoration: BoxDecoration(
@@ -310,10 +307,11 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // WIDGET: CARD PERFIL FILHO
-  // ═══════════════════════════════════════════════════════════════
-  Widget _buildCardPerfilFilho(Map<String, dynamic> perfil, AppTema appTema) {
+  Widget _buildCardPerfilFilho(
+    Map<String, dynamic> perfil,
+    AppTema appTema,
+    int index,
+  ) {
     final apelido = perfil['apelido'] ?? 'Perfil';
     final avatar = perfil['avatar'] ?? 'assets/avatar1.png';
 
@@ -345,12 +343,8 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Avatar
             CircleAvatar(radius: 40, backgroundImage: AssetImage(avatar)),
-
             const SizedBox(height: 12),
-
-            // Nome do perfil
             Text(
               apelido,
               textAlign: TextAlign.center,
@@ -360,12 +354,9 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // Botão Editar
             ElevatedButton(
-              onPressed: () => _mostrarOpcoesEdicao(perfil),
+              onPressed: () => _mostrarOpcoesEdicao(perfil, index),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFA9DBF4),
                 foregroundColor: Colors.black,
@@ -388,193 +379,6 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // AÇÕES: MENU DE PERFIL (AVATAR) - IGUAL AO CATALOGO.DART
-  // ═══════════════════════════════════════════════════════════════
-  void _mostrarMenuPerfil() {
-    final appTema = Provider.of<AppTema>(context, listen: false);
-    final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
-    final userName = perfilProvider.perfilAtivoApelido ?? 'Usuário';
-    final userAvatar = perfilProvider.perfilAtivoAvatar ?? 'assets/avatar1.png';
-
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
-      builder: (BuildContext context) {
-        return Dialog(
-          alignment: Alignment.topRight,
-          insetPadding: const EdgeInsets.only(top: 70, right: 20),
-          backgroundColor: Colors.transparent,
-          child: Container(
-            width: 280,
-            decoration: BoxDecoration(
-              color: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Cabeçalho com avatar e nome
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: appTema.isDarkMode
-                        ? Colors.grey[850]
-                        : Colors.grey[100],
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundImage: AssetImage(userAvatar),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              userName,
-                              style: TextStyle(
-                                color: appTema.textColor,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              perfilProvider.isPerfilPai
-                                  ? 'Perfil Principal'
-                                  : 'Perfil Filho',
-                              style: TextStyle(
-                                color: appTema.textSecondaryColor,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Itens do menu
-                _buildMenuItem(
-                  icon: Icons.account_circle_outlined,
-                  label: 'Mudar Avatar',
-                  isDarkMode: appTema.isDarkMode,
-                  onTap: () {
-                    Navigator.pop(context);
-                    context.push('/mudar-avatar');
-                  },
-                ),
-                _buildMenuItem(
-                  icon: Icons.people_outline,
-                  label: 'Mudar Perfil',
-                  isDarkMode: appTema.isDarkMode,
-                  onTap: () {
-                    Navigator.pop(context);
-                    context.push('/mudar-perfil');
-                  },
-                ),
-                _buildMenuItem(
-                  icon: Icons.person_add_outlined,
-                  label: 'Adicionar Familiar',
-                  isDarkMode: appTema.isDarkMode,
-                  onTap: () async {
-                    Navigator.pop(context);
-                    await context.push('/adicionar-perfis');
-                    if (!mounted) return; // ✅ ADICIONADO
-                    _carregarPerfisFilhos();
-                  },
-                ),
-                _buildMenuItem(
-                  icon: Icons.settings_outlined,
-                  label: 'Configurações',
-                  isDarkMode: appTema.isDarkMode,
-                  onTap: () {
-                    Navigator.pop(context);
-                    context.push('/perfil-configs');
-                  },
-                ),
-
-                const Divider(height: 1),
-
-                _buildMenuItem(
-                  icon: Icons.logout,
-                  label: 'Sair',
-                  isDestructive: true,
-                  isDarkMode: appTema.isDarkMode,
-                  onTap: () async {
-                    Navigator.pop(context);
-                    _realizarLogout();
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // AÇÕES: OPÇÕES DE EDIÇÃO DO PERFIL FILHO
-  // ═══════════════════════════════════════════════════════════════
-  void _mostrarOpcoesEdicao(Map<String, dynamic> perfil) {
-    final appTema = Provider.of<AppTema>(context, listen: false);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildMenuItem(
-              icon: Icons.favorite,
-              label: 'Editar Preferências',
-              isDarkMode: appTema.isDarkMode,
-              onTap: () async {
-                Navigator.pop(context);
-                await context.push('/definir-generos-favoritos');
-                if (!mounted) return; // ✅ ADICIONADO
-                _carregarPerfisFilhos();
-              },
-            ),
-            _buildMenuItem(
-              icon: Icons.delete,
-              label: 'Excluir Perfil',
-              isDarkMode: appTema.isDarkMode,
-              onTap: () {
-                Navigator.pop(context);
-                _mostrarDialogoExcluirPerfilFilho(perfil['id']);
-              },
-              isDestructive: true,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // WIDGET: ITEM DO MENU
-  // ═══════════════════════════════════════════════════════════════
   Widget _buildMenuItem({
     required IconData icon,
     required String label,
@@ -609,180 +413,438 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // AÇÕES: SELECIONAR PERFIL FILHO
+  // AÇÕES
   // ═══════════════════════════════════════════════════════════════
+
+  void _mostrarMenuPerfil() {
+    final appTema = Provider.of<AppTema>(context, listen: false);
+    final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
+    final userName = perfilProvider.perfilAtivoApelido ?? 'Usuário';
+    final userAvatar = perfilProvider.perfilAtivoAvatar ?? 'assets/avatar1.png';
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (BuildContext context) {
+        return Dialog(
+          alignment: Alignment.topRight,
+          insetPadding: const EdgeInsets.only(top: 70, right: 20),
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: 280,
+            decoration: BoxDecoration(
+              color: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: appTema.isDarkMode
+                        ? Colors.grey[850]
+                        : Colors.grey[100],
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundImage: AssetImage(userAvatar),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              userName,
+                              style: TextStyle(
+                                color: appTema.textColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Perfil Principal',
+                              style: TextStyle(
+                                color: appTema.textSecondaryColor,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                _buildMenuItem(
+                  icon: Icons.account_circle_outlined,
+                  label: 'Mudar Avatar',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/mudar-avatar');
+                  },
+                ),
+                _buildMenuItem(
+                  icon: Icons.people_outline,
+                  label: 'Mudar Perfil',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/mudar-perfil');
+                  },
+                ),
+                _buildMenuItem(
+                  icon: Icons.person_add_outlined,
+                  label: 'Adicionar Familiar',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await context.push('/adicionar-perfis');
+                    if (!mounted) return;
+                    _carregarPerfisFilhos();
+                  },
+                ),
+                _buildMenuItem(
+                  icon: Icons.settings_outlined,
+                  label: 'Configurações',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/perfil-configs');
+                  },
+                ),
+
+                const Divider(height: 1),
+
+                _buildMenuItem(
+                  icon: Icons.logout,
+                  label: 'Sair',
+                  isDestructive: true,
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    _realizarLogout();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _mostrarOpcoesEdicao(Map<String, dynamic> perfil, int index) {
+    final appTema = Provider.of<AppTema>(context, listen: false);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (modalContext) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildMenuItem(
+              icon: Icons.edit,
+              label: 'Editar Perfil',
+              isDarkMode: appTema.isDarkMode,
+              onTap: () async {
+                // ✅ Captura o navigator antes de operações assíncronas
+                final navigator = Navigator.of(modalContext);
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                final router = GoRouter.of(context);
+
+                navigator.pop();
+
+                // ✅ CORREÇÃO: Recarrega dados antes de editar
+                await _carregarPerfisFilhos();
+
+                if (!mounted) return;
+
+                // ✅ Verifica se o índice ainda é válido após reload
+                if (index >= _perfisFilhos.length) {
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Perfil não encontrado. A lista foi atualizada.',
+                      ),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+
+                // ✅ SOLICITA PIN ANTES DE EDITAR
+                if (!mounted) return;
+                final pinVerificado = await VerificarPinDialog.verificar(
+                  context,
+                );
+                if (!pinVerificado || !mounted) return;
+
+                // ✅ NAVEGA PARA TELA DE EDIÇÃO com dados atualizados
+                final resultado = await router.push(
+                  '/editar-perfil-filho',
+                  extra: {
+                    'perfilIndex': index,
+                    'perfilAtual':
+                        _perfisFilhos[index], // Usa dados atualizados
+                  },
+                );
+
+                // ✅ Se editou com sucesso, recarrega e atualiza provider se necessário
+                if (resultado == true && mounted) {
+                  await _carregarPerfisFilhos();
+
+                  if (!mounted) return;
+
+                  // ✅ CORREÇÃO: Atualiza provider se o perfil editado estiver ativo
+                  final perfilProvider = Provider.of<PerfilProvider>(
+                    context,
+                    listen: false,
+                  );
+
+                  if (!perfilProvider.isPerfilPai &&
+                      index < _perfisFilhos.length) {
+                    final perfilEditado = _perfisFilhos[index];
+
+                    // Se o perfil ativo foi editado, atualiza o provider
+                    if (perfilProvider.perfilAtivoApelido ==
+                        perfil['apelido']) {
+                      await perfilProvider.setPerfilAtivo(
+                        apelido: perfilEditado['apelido'],
+                        avatar: perfilEditado['avatar'],
+                        isPai: false,
+                      );
+
+                      if (!mounted) return;
+
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Perfil atualizado! As alterações já estão ativas.',
+                          ),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  }
+                }
+              },
+            ),
+            _buildMenuItem(
+              icon: Icons.delete,
+              label: 'Excluir Perfil',
+              isDarkMode: appTema.isDarkMode,
+              onTap: () {
+                Navigator.of(modalContext).pop();
+                _confirmarExclusao(index);
+              },
+              isDestructive: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ✅ CORRIGIDO: Seleciona perfil do array
   Future<void> _selecionarPerfilFilho(Map<String, dynamic> perfil) async {
-    // Obtém o provider ANTES de qualquer await
+    print("🔵 _selecionarPerfilFilho chamado");
+    print("   Perfil selecionado: ${perfil['apelido']}");
+
     final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
 
-    // Solicita PIN
-    final pinCorreto = await _solicitarPIN(perfil['pin']);
-    if (!pinCorreto) {
-      if (!mounted) return;
-      _mostrarMensagem('PIN incorreto!');
+    final apelido = perfil['apelido'] ?? 'Usuário';
+    final avatar = perfil['avatar'] ?? 'assets/avatar1.png';
+
+    print("   Apelido: $apelido");
+    print("   Avatar: $avatar");
+
+    // 🔒 Solicita PIN do perfil PAI para trocar
+    if (!mounted) return;
+
+    final pinVerificado = await VerificarPinDialog.verificar(context);
+
+    if (!mounted) return;
+
+    if (!pinVerificado) {
+      print("❌ PIN não verificado - cancelando troca de perfil");
       return;
     }
 
-    // Define o perfil ativo
+    print("✅ PIN verificado - permitindo troca para perfil filho");
+
     await perfilProvider.setPerfilAtivo(
-      apelido: perfil['apelido'],
-      avatar: perfil['avatar'],
+      apelido: apelido,
+      avatar: avatar,
       isPai: false,
     );
 
+    print("✅ Perfil salvo");
+
     if (!mounted) return;
+
     context.go('/catalogo');
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // DIÁLOGOS
-  // ═══════════════════════════════════════════════════════════════
-  Future<bool> _solicitarPIN(String pinCorreto) async {
-    if (!mounted) return false; // ✅ VERIFICAÇÃO ANTES DE USAR CONTEXT
+  // ✅ CORRIGIDO: Exclui do array
+  Future<void> _confirmarExclusao(int index) async {
+    final appTema = Provider.of<AppTema>(context, listen: false);
+    final perfil = _perfisFilhos[index];
+    final apelido = perfil['apelido'] ?? 'este perfil';
 
-    final pinController = TextEditingController();
-    final resultado = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Digite o PIN'),
-        content: TextField(
-          controller: pinController,
-          keyboardType: TextInputType.number,
-          maxLength: 4,
-          obscureText: true,
-          decoration: const InputDecoration(hintText: '****', counterText: ''),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              final pinDigitado = pinController.text;
-              Navigator.pop(context, pinDigitado == pinCorreto);
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-
-    return resultado ?? false;
-  }
-
-  void _mostrarDialogoExcluirPerfilFilho(String perfilId) async {
-    // Solicita o PIN do perfil PAI (não do filho)
-    final user = _auth.currentUser;
-    if (user == null) return;
-
-    // Buscar o PIN do perfil pai
-    String? pinPai;
-    try {
-      final userDoc = await _firestore.collection('users').doc(user.uid).get();
-      pinPai = userDoc.data()?['pin'];
-    } catch (e) {
-      _mostrarMensagem('Erro ao verificar PIN: $e');
-      return;
-    }
-
-    if (pinPai == null) {
-      _mostrarMensagem('PIN do perfil pai não encontrado');
-      return;
-    }
-
-    // Solicita o PIN
+    // Solicita PIN
     if (!mounted) return;
-    final pinCorreto = await _solicitarPINExclusao(pinPai);
-    if (!pinCorreto) {
-      _mostrarMensagem('PIN incorreto!');
-      return;
-    }
+    final pinVerificado = await VerificarPinDialog.verificar(context);
+    if (!pinVerificado) return;
 
-    // Se o PIN estiver correto, mostra confirmação final
-    if (!mounted) return; // ✅ VERIFICAÇÃO ANTES DE USAR CONTEXT
-    showDialog(
+    if (!mounted) return;
+
+    // Confirmação
+    final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Excluir Perfil Filho'),
-        content: const Text(
-          'Tem certeza que deseja excluir este perfil? Esta ação não pode ser desfeita.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              final sucesso = await _excluirPerfilFilho(perfilId);
-              if (sucesso) {
-                _carregarPerfisFilhos();
-              }
-            },
-            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<bool> _solicitarPINExclusao(String pinCorreto) async {
-    if (!mounted) return false; // ✅ VERIFICAÇÃO ANTES DE USAR CONTEXT
-
-    final pinController = TextEditingController();
-    final resultado = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Digite seu PIN'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+        backgroundColor: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
+        title: Row(
           children: [
-            const Text('Digite o PIN do perfil pai para confirmar a exclusão'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: pinController,
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-              obscureText: true,
-              decoration: const InputDecoration(
-                hintText: '****',
-                counterText: '',
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.orange,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Excluir Perfil',
+                style: TextStyle(color: appTema.textColor),
               ),
             ),
           ],
         ),
+        content: Text(
+          'Deseja realmente excluir o perfil "$apelido"?\n\nEsta ação não pode ser desfeita.',
+          style: TextStyle(color: appTema.textSecondaryColor),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: appTema.textSecondaryColor),
+            ),
           ),
-          TextButton(
-            onPressed: () {
-              final pinDigitado = pinController.text;
-              Navigator.pop(context, pinDigitado == pinCorreto);
-            },
-            child: const Text('OK'),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Excluir'),
           ),
         ],
       ),
     );
 
-    return resultado ?? false;
+    if (confirmar == true) {
+      await _excluirPerfilFilho(index);
+    }
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // AÇÕES PRINCIPAIS
-  // ═══════════════════════════════════════════════════════════════
-  Future<bool> _excluirPerfilFilho(String perfilId) async {
+  // ✅ CORRIGIDO: Remove do array
+  Future<void> _excluirPerfilFilho(int index) async {
     try {
-      await _firestore.collection('perfis_filhos').doc(perfilId).delete();
-      _mostrarMensagem('Perfil filho excluído com sucesso!');
-      return true;
+      final user = _auth.currentUser;
+      if (user == null) {
+        _mostrarMensagem('Usuário não autenticado');
+        return;
+      }
+
+      final perfilExcluido = _perfisFilhos[index];
+      final apelidoExcluido = perfilExcluido['apelido'];
+
+      // Remove do array local
+      _perfisFilhos.removeAt(index);
+
+      // Atualiza no Firestore
+      await _firestore.collection('users').doc(user.uid).update({
+        'perfisFilhos': _perfisFilhos,
+      });
+
+      print("✅ Perfil excluído com sucesso!");
+
+      if (!mounted) return;
+
+      final perfilProvider = Provider.of<PerfilProvider>(
+        context,
+        listen: false,
+      );
+
+      // Se excluiu o perfil ativo, volta para o perfil pai
+      if (perfilProvider.perfilAtivoApelido == apelidoExcluido) {
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (userDoc.exists) {
+          final data = userDoc.data();
+          await perfilProvider.setPerfilAtivo(
+            apelido: data?['apelido'] ?? 'Usuário',
+            avatar: data?['avatar'] ?? 'assets/avatar1.png',
+            isPai: true,
+          );
+
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Perfil excluído! Voltando para o perfil principal.',
+              ),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Perfil "$apelidoExcluido" excluído com sucesso!'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      if (mounted) {
+        setState(() {});
+      }
     } catch (e) {
-      _mostrarMensagem('Erro ao excluir perfil filho: $e');
-      return false;
+      print("❌ Erro ao excluir perfil: $e");
+      if (!mounted) return;
+
+      _mostrarMensagem('Erro ao excluir: ${e.toString()}');
     }
   }
 
