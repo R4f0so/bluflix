@@ -290,36 +290,4 @@ class PinService {
 
     return true;
   }
-
-  // ═══════════════════════════════════════════════════════════════
-  // MIGRAÇÃO (OPCIONAL)
-  // ═══════════════════════════════════════════════════════════════
-
-  /// Migra um PIN em texto plano para hash
-  ///
-  /// **USO ÚNICO**: Para migrar PINs existentes do formato antigo
-  ///
-  /// ⚠️ IMPORTANTE: Esta função deve ser chamada apenas uma vez
-  /// durante a migração e depois removida do código
-  @Deprecated('Usar apenas para migração de PINs antigos')
-  Future<bool> migrarPinTextoPlano(String pinTextoPlano) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return false;
-
-      final pinHash = _hashPin(pinTextoPlano);
-
-      await _firestore.collection('users').doc(user.uid).update({
-        'pinHash': pinHash,
-        'pin': FieldValue.delete(), // Remove o PIN em texto plano
-        'pinMigradoEm': FieldValue.serverTimestamp(),
-      });
-
-      print('✅ PIN migrado com sucesso');
-      return true;
-    } catch (e) {
-      print('❌ Erro ao migrar PIN: $e');
-      return false;
-    }
-  }
 }
