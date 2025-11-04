@@ -13,7 +13,7 @@ class VideoServiceYoutube {
   Future<List<VideoModelYoutube>> buscarTodosVideos() async {
     try {
       final query = await _firestore
-          .collection('videos')
+          .collection('videos_youtube')
           .where('ativo', isEqualTo: true)
           .orderBy('dataUpload', descending: true)
           .get();
@@ -31,7 +31,7 @@ class VideoServiceYoutube {
   Future<List<VideoModelYoutube>> buscarVideosPorGenero(String genero) async {
     try {
       final query = await _firestore
-          .collection('videos')
+          .collection('videos_youtube')
           .where('ativo', isEqualTo: true)
           .where('generos', arrayContains: genero)
           .orderBy('dataUpload', descending: true)
@@ -53,7 +53,7 @@ class VideoServiceYoutube {
     try {
       // Busca vídeos que contenham pelo menos um dos gêneros
       final query = await _firestore
-          .collection('videos')
+          .collection('videos_youtube')
           .where('ativo', isEqualTo: true)
           .orderBy('dataUpload', descending: true)
           .get();
@@ -76,7 +76,10 @@ class VideoServiceYoutube {
   /// Busca um vídeo específico por ID
   Future<VideoModelYoutube?> buscarVideoPorId(String videoId) async {
     try {
-      final doc = await _firestore.collection('videos').doc(videoId).get();
+      final doc = await _firestore
+          .collection('videos_youtube')
+          .doc(videoId)
+          .get();
 
       if (doc.exists) {
         return VideoModelYoutube.fromFirestore(doc);
@@ -121,7 +124,9 @@ class VideoServiceYoutube {
       };
 
       // Adiciona ao Firestore
-      final docRef = await _firestore.collection('videos').add(videoData);
+      final docRef = await _firestore
+          .collection('videos_youtube')
+          .add(videoData);
 
       print('✅ Vídeo adicionado com sucesso! ID: ${docRef.id}');
       return docRef.id;
@@ -165,7 +170,10 @@ class VideoServiceYoutube {
         return false;
       }
 
-      await _firestore.collection('videos').doc(videoId).update(updates);
+      await _firestore
+          .collection('videos_youtube')
+          .doc(videoId)
+          .update(updates);
 
       print('✅ Vídeo atualizado com sucesso!');
       return true;
@@ -182,7 +190,7 @@ class VideoServiceYoutube {
   /// Exclui um vídeo do Firestore
   Future<bool> excluirVideo(String videoId) async {
     try {
-      await _firestore.collection('videos').doc(videoId).delete();
+      await _firestore.collection('videos_youtube').doc(videoId).delete();
 
       print('✅ Vídeo excluído com sucesso!');
       return true;
@@ -195,7 +203,7 @@ class VideoServiceYoutube {
   /// Desativa um vídeo (soft delete)
   Future<bool> desativarVideo(String videoId) async {
     try {
-      await _firestore.collection('videos').doc(videoId).update({
+      await _firestore.collection('videos_youtube').doc(videoId).update({
         'ativo': false,
       });
 
@@ -215,7 +223,7 @@ class VideoServiceYoutube {
   Future<void> registrarVisualizacao(String videoId, String userId) async {
     try {
       await _firestore
-          .collection('videos')
+          .collection('videos_youtube')
           .doc(videoId)
           .collection('visualizacoes')
           .add({'userId': userId, 'timestamp': FieldValue.serverTimestamp()});
@@ -230,7 +238,7 @@ class VideoServiceYoutube {
   Future<int> buscarTotalVisualizacoes(String videoId) async {
     try {
       final query = await _firestore
-          .collection('videos')
+          .collection('videos_youtube')
           .doc(videoId)
           .collection('visualizacoes')
           .get();

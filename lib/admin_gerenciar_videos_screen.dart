@@ -20,7 +20,7 @@ class _AdminGerenciarVideosScreenState
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String? _generoFiltro;
-  bool _mostrarApenasinativos = false;
+  bool _mostrarApenasInativos = false;
 
   final List<String> _generos = [
     'Todos',
@@ -90,17 +90,17 @@ class _AdminGerenciarVideosScreenState
     }
 
     // Filtro por status (ativo/inativo)
-    if (_mostrarApenasinativos) {
+    if (_mostrarApenasInativos) {
       query = query.where('ativo', isEqualTo: false);
     }
 
-    // Ordenar por data de criação (mais recentes primeiro)
-    query = query.orderBy('criadoEm', descending: true);
+    // Ordenar por data de upload
+    query = query.orderBy('dataUpload', descending: true);
 
     return query.snapshots();
   }
 
-  List<VideoModelYouTube> _filtrarPorBusca(List<VideoModelYouTube> videos) {
+  List<VideoModelYoutube> _filtrarPorBusca(List<VideoModelYoutube> videos) {
     if (_searchQuery.isEmpty) return videos;
 
     return videos.where((video) {
@@ -114,15 +114,12 @@ class _AdminGerenciarVideosScreenState
     }).toList();
   }
 
-  Future<void> _toggleStatusVideo(VideoModelYouTube video) async {
+  Future<void> _toggleStatusVideo(VideoModelYoutube video) async {
     try {
       await FirebaseFirestore.instance
           .collection('videos_youtube')
           .doc(video.id)
-          .update({
-            'ativo': !video.ativo,
-            'atualizadoEm': FieldValue.serverTimestamp(),
-          });
+          .update({'ativo': !video.ativo});
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -148,7 +145,7 @@ class _AdminGerenciarVideosScreenState
     }
   }
 
-  Future<void> _confirmarExclusao(VideoModelYouTube video) async {
+  Future<void> _confirmarExclusao(VideoModelYoutube video) async {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -176,7 +173,7 @@ class _AdminGerenciarVideosScreenState
     }
   }
 
-  Future<void> _excluirVideo(VideoModelYouTube video) async {
+  Future<void> _excluirVideo(VideoModelYoutube video) async {
     try {
       await FirebaseFirestore.instance
           .collection('videos_youtube')
@@ -203,7 +200,7 @@ class _AdminGerenciarVideosScreenState
     }
   }
 
-  void _navegarParaEdicao(VideoModelYouTube video) {
+  void _navegarParaEdicao(VideoModelYoutube video) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => AdminEditarVideoScreen(video: video),
@@ -303,9 +300,9 @@ class _AdminGerenciarVideosScreenState
                     'Apenas Inativos',
                     style: TextStyle(color: appTema.textColor),
                   ),
-                  selected: _mostrarApenasinativos,
+                  selected: _mostrarApenasInativos,
                   onSelected: (selected) {
-                    setState(() => _mostrarApenasinativos = selected);
+                    setState(() => _mostrarApenasInativos = selected);
                   },
                   backgroundColor: appTema.isDarkMode
                       ? Colors.grey[800]
@@ -360,9 +357,9 @@ class _AdminGerenciarVideosScreenState
                   );
                 }
 
-                // Converter documentos em VideoModelYouTube
-                List<VideoModelYouTube> videos = snapshot.data!.docs
-                    .map((doc) => VideoModelYouTube.fromFirestore(doc))
+                // Converter documentos em VideoModelYoutube
+                List<VideoModelYoutube> videos = snapshot.data!.docs
+                    .map((doc) => VideoModelYoutube.fromFirestore(doc))
                     .toList();
 
                 // Aplicar filtro de busca
@@ -396,7 +393,7 @@ class _AdminGerenciarVideosScreenState
     );
   }
 
-  Widget _buildVideoCard(VideoModelYouTube video, AppTema appTema) {
+  Widget _buildVideoCard(VideoModelYoutube video, AppTema appTema) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       color: appTema.isDarkMode ? Colors.grey[850] : Colors.white,

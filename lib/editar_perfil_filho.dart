@@ -22,27 +22,10 @@ class EditarPerfilFilhoScreen extends StatefulWidget {
       _EditarPerfilFilhoScreenState();
 }
 
-class _EditarPerfilFilhoScreenState extends State<EditarPerfilFilhoScreen>
-    with SingleTickerProviderStateMixin {
+class _EditarPerfilFilhoScreenState extends State<EditarPerfilFilhoScreen> {
   final TextEditingController _apelidoController = TextEditingController();
   bool _isLoading = false;
-  String? _avatarSelecionado;
   final Map<String, bool> _interessesSelecionados = {};
-
-  late AnimationController _animationController;
-  late Animation<double> _animation;
-
-  // Lista de avatares disponíveis
-  final List<String> _avatares = [
-    "assets/avatar1.png",
-    "assets/avatar2.png",
-    "assets/avatar3.png",
-    "assets/avatar4.png",
-    "assets/avatar5.png",
-    "assets/avatar6.png",
-    "assets/avatar7.png",
-    "assets/avatar8.png",
-  ];
 
   // Lista de interesses disponíveis
   final Map<String, Map<String, dynamic>> _todosInteresses = {
@@ -62,7 +45,6 @@ class _EditarPerfilFilhoScreenState extends State<EditarPerfilFilhoScreen>
 
     // Inicializa com dados atuais
     _apelidoController.text = widget.perfilAtual['apelido'] ?? '';
-    _avatarSelecionado = widget.perfilAtual['avatar'] ?? _avatares[0];
 
     // Inicializa interesses
     final interessesAtuais =
@@ -70,22 +52,11 @@ class _EditarPerfilFilhoScreenState extends State<EditarPerfilFilhoScreen>
     for (var interesse in _todosInteresses.keys) {
       _interessesSelecionados[interesse] = interessesAtuais.contains(interesse);
     }
-
-    // Animação para o avatar
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..repeat(reverse: true);
-
-    _animation = Tween<double>(begin: 0, end: 20).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
   }
 
   @override
   void dispose() {
     _apelidoController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
@@ -173,7 +144,6 @@ class _EditarPerfilFilhoScreenState extends State<EditarPerfilFilhoScreen>
       print("💾 ATUALIZANDO PERFIL FILHO");
       print("   Índice: ${widget.perfilIndex}");
       print("   Novo Apelido: $apelido");
-      print("   Novo Avatar: $_avatarSelecionado");
       print("   Novos Interesses: $interessesSelecionados");
       print("════════════════════════════════");
 
@@ -236,19 +206,20 @@ class _EditarPerfilFilhoScreenState extends State<EditarPerfilFilhoScreen>
           "⚠️ Perfil mudou de posição. Usando índice correto: $indexCorreto",
         );
 
-        // Atualiza usando o índice correto
+        // Atualiza usando o índice correto (mantém o avatar original)
         perfisFilhos[indexCorreto] = {
           'apelido': apelido,
-          'avatar': _avatarSelecionado,
+          'avatar':
+              perfisFilhos[indexCorreto]['avatar'], // Mantém o avatar original
           'interesses': interessesSelecionados,
           'criadoEm': perfisFilhos[indexCorreto]['criadoEm'] ?? Timestamp.now(),
           'atualizadoEm': Timestamp.now(),
         };
       } else {
-        // Tudo certo, atualiza normalmente
+        // Tudo certo, atualiza normalmente (mantém o avatar original)
         perfisFilhos[widget.perfilIndex] = {
           'apelido': apelido,
-          'avatar': _avatarSelecionado,
+          'avatar': widget.perfilAtual['avatar'], // Mantém o avatar original
           'interesses': interessesSelecionados,
           'criadoEm':
               perfisFilhos[widget.perfilIndex]['criadoEm'] ?? Timestamp.now(),
@@ -287,7 +258,7 @@ class _EditarPerfilFilhoScreenState extends State<EditarPerfilFilhoScreen>
 
         await perfilProvider.setPerfilAtivo(
           apelido: apelido,
-          avatar: _avatarSelecionado!,
+          avatar: widget.perfilAtual['avatar'], // Mantém o avatar original
           isPai: false,
         );
 
@@ -413,64 +384,12 @@ class _EditarPerfilFilhoScreenState extends State<EditarPerfilFilhoScreen>
                       const SizedBox(height: 40),
 
                       // ═══════════════════════════════════════════════
-                      // SEÇÃO: AVATAR
+                      // AVATAR FIXO (não editável)
                       // ═══════════════════════════════════════════════
-                      _buildSecaoTitulo('Avatar', appTema),
-
-                      const SizedBox(height: 16),
-
-                      SizedBox(
-                        height: 120,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _avatares.length,
-                          itemBuilder: (context, index) {
-                            final avatar = _avatares[index];
-                            final isSelected = _avatarSelecionado == avatar;
-
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _avatarSelecionado = avatar;
-                                });
-                              },
-                              child: AnimatedBuilder(
-                                animation: _animation,
-                                builder: (context, child) {
-                                  double offset = isSelected
-                                      ? -_animation.value
-                                      : 0;
-                                  return Transform.translate(
-                                    offset: Offset(0, offset),
-                                    child: Container(
-                                      width: 100,
-                                      margin: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
-                                      padding: isSelected
-                                          ? const EdgeInsets.all(4)
-                                          : null,
-                                      decoration: isSelected
-                                          ? BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: const Color(0xFFA9DBF4),
-                                                width: 4,
-                                              ),
-                                            )
-                                          : null,
-                                      child: ClipOval(
-                                        child: Image.asset(
-                                          avatar,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
-                          },
+                      CircleAvatar(
+                        radius: 60,
+                        backgroundImage: AssetImage(
+                          widget.perfilAtual['avatar'],
                         ),
                       ),
 

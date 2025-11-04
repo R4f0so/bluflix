@@ -18,6 +18,11 @@ class AppTema extends ChangeNotifier {
 
   Color get backgroundColor => _isDarkMode ? Colors.black : Colors.white;
 
+  // Adicionando a propriedade corSecundaria que estava faltando
+  Color get corSecundaria => _isDarkMode
+      ? const Color(0xFF1E88E5) // Azul para tema escuro
+      : const Color(0xFF1976D2); // Azul mais escuro para tema claro
+
   // Carregar preferência salva do SharedPreferences
   Future<void> loadTheme() async {
     try {

@@ -5,7 +5,7 @@ import 'app_tema.dart';
 import 'video_model_youtube.dart';
 
 class AdminEditarVideoScreen extends StatefulWidget {
-  final VideoModelYouTube video;
+  final VideoModelYoutube video;
 
   const AdminEditarVideoScreen({super.key, required this.video});
 
@@ -62,7 +62,6 @@ class _AdminEditarVideoScreenState extends State<AdminEditarVideoScreen> {
             'titulo': _tituloController.text.trim(),
             'descricao': _descricaoController.text.trim(),
             'generos': _generosSelecionados,
-            'atualizadoEm': FieldValue.serverTimestamp(),
           });
 
       if (mounted) {

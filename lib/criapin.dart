@@ -186,7 +186,7 @@ class _CriaPinScreenState extends State<CriaPinScreen> {
                     "O PIN protegerá suas configurações e\ncontroles parentais",
                     style: TextStyle(
                       fontSize: 16,
-                      color: appTema.textColor.withOpacity(0.8),
+                      color: appTema.textColor.withValues(alpha: 0.8),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -211,7 +211,7 @@ class _CriaPinScreenState extends State<CriaPinScreen> {
                       labelStyle: TextStyle(color: appTema.textColor),
                       counterText: "",
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.1),
+                      fillColor: Colors.white.withValues(alpha: 0.1),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -228,7 +228,7 @@ class _CriaPinScreenState extends State<CriaPinScreen> {
                           _isPinVisible
                               ? Icons.visibility
                               : Icons.visibility_off,
-                          color: appTema.textColor.withOpacity(0.6),
+                          color: appTema.textColor.withValues(alpha: 0.6),
                         ),
                         onPressed: () {
                           setState(() {
@@ -259,7 +259,7 @@ class _CriaPinScreenState extends State<CriaPinScreen> {
                       labelStyle: TextStyle(color: appTema.textColor),
                       counterText: "",
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.1),
+                      fillColor: Colors.white.withValues(alpha: 0.1),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -276,7 +276,7 @@ class _CriaPinScreenState extends State<CriaPinScreen> {
                           _isConfirmPinVisible
                               ? Icons.visibility
                               : Icons.visibility_off,
-                          color: appTema.textColor.withOpacity(0.6),
+                          color: appTema.textColor.withValues(alpha: 0.6),
                         ),
                         onPressed: () {
                           setState(() {
@@ -293,10 +293,10 @@ class _CriaPinScreenState extends State<CriaPinScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.2),
+                      color: Colors.amber.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.amber.withOpacity(0.5),
+                        color: Colors.amber.withValues(alpha: 0.5),
                         width: 1,
                       ),
                     ),
