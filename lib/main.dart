@@ -31,6 +31,7 @@ import 'package:bluflix/presentation/screens/catalogo/video_player_youtube_scree
 import 'package:bluflix/presentation/screens/admin/admin_add_video_screen.dart';
 import 'package:bluflix/presentation/screens/admin/admin_listar_videos_screen.dart';
 import 'package:bluflix/presentation/screens/perfil/editar_perfil_filho_screen.dart';
+import 'package:bluflix/presentation/screens/admin/gerenciamento_admin_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -127,6 +128,10 @@ class BluFlixApp extends StatelessWidget {
           builder: (context, state) => const GerenciamentoPaisScreen(),
         ),
         GoRoute(
+          path: '/gerenciamento-admin',
+          builder: (context, state) => const GerenciamentoAdminScreen(),
+        ),
+        GoRoute(
           path: '/perfil-configs',
           builder: (context, state) => const PerfilConfigsScreen(),
         ),
@@ -142,6 +147,7 @@ class BluFlixApp extends StatelessWidget {
           path: '/seguranca-config',
           builder: (context, state) => const SegurancaConfigScreen(),
         ),
+
         // Lista de vídeos por gênero (versão YouTube)
         GoRoute(
           path: '/videos/:genero',

@@ -48,26 +48,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (!mounted) return;
 
-        // ✅ DEBUG: Verifica tema após login
-        print("════════════════════════════════");
-        print("✅ LOGIN BEM-SUCEDIDO");
-
+        // ✅ Carrega tema
         final appTema = Provider.of<AppTema>(context, listen: false);
-        print(
-          "   Tema ANTES de carregar do Firestore: ${appTema.isDarkMode ? 'Escuro' : 'Claro'}",
-        );
-
-        // ✅ CARREGA TEMA DO FIRESTORE IMEDIATAMENTE
         await appTema.loadThemeFromFirestore();
-
-        print(
-          "   Tema DEPOIS de carregar do Firestore: ${appTema.isDarkMode ? 'Escuro' : 'Claro'}",
-        );
-
-        final prefs = await SharedPreferences.getInstance();
-        final temaNoStorage = prefs.getBool('isDarkMode');
-        print("   Tema no SharedPreferences: $temaNoStorage");
-        print("════════════════════════════════");
 
         final user = userCredential.user;
         if (user != null) {
@@ -91,7 +74,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 });
 
             if (!mounted) return;
-            print("Documento não existia. Redirecionando para /avatar");
             context.go('/avatar');
             return;
           }
@@ -99,22 +81,23 @@ class _LoginScreenState extends State<LoginScreen> {
           final userData = userDoc.data();
 
           if (userData?['apelido'] == null || userData?['avatar'] == null) {
-            print("Perfil incompleto. Redirecionando para /avatar");
             context.go('/avatar');
           } else {
-            print("Perfil completo! Verificando último perfil ativo...");
+            // ✅ NOVO: Verificar se é admin ANTES de redirecionar
+            final tipoUsuario = userData?['tipoUsuario'] ?? '';
+            final isAdmin = tipoUsuario == 'admin';
 
-            // ✅ NOVA LÓGICA: Carrega o último perfil ativo e redireciona
+            print("🔍 Verificando tipo de usuário...");
+            print("   tipoUsuario: $tipoUsuario");
+            print("   É admin? $isAdmin");
+
+            // Configurar perfil ativo
             final perfilProvider = Provider.of<PerfilProvider>(
               context,
               listen: false,
             );
 
-            // Se não tem perfil ativo salvo, usa o perfil pai como padrão
             if (perfilProvider.perfilAtivoApelido == null) {
-              print(
-                "⚠️ Nenhum perfil ativo salvo. Usando perfil pai como padrão",
-              );
               await perfilProvider.setPerfilAtivo(
                 apelido: userData?['apelido'] ?? 'Usuário',
                 avatar: userData?['avatar'] ?? 'assets/avatar1.png',
@@ -124,8 +107,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
             if (!mounted) return;
 
-            // Redireciona baseado no tipo de perfil
-            if (perfilProvider.isPerfilPai) {
+            // ✅ NOVO: Redirecionamento baseado em admin
+            if (isAdmin) {
+              print("🎬 ADMIN - Redirecionando para /gerenciamento-admin");
+              context.go('/gerenciamento-admin');
+            } else if (perfilProvider.isPerfilPai) {
               print("👨 Perfil PAI - Redirecionando para /gerenciamento-pais");
               context.go('/gerenciamento-pais');
             } else {
@@ -212,13 +198,12 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // AppBar - apenas botão de tema
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
                     const Spacer(),
-                    const ThemeToggleButton(showLogo: false), // ✅ SEM logo
+                    const ThemeToggleButton(showLogo: false),
                   ],
                 ),
               ),
@@ -243,7 +228,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 30),
 
-                          // Campo E-mail
                           _buildTextField(
                             controller: _emailController,
                             hint: "E-mail",
@@ -251,7 +235,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 16),
 
-                          // Campo Senha
                           _buildTextField(
                             controller: _senhaController,
                             hint: "Senha",
@@ -272,7 +255,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 30),
 
-                          // Botão Entrar
                           SizedBox(
                             width: 200,
                             height: 50,
@@ -307,7 +289,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           const SizedBox(height: 16),
 
-                          // Botão Voltar
                           SizedBox(
                             width: 200,
                             height: 50,

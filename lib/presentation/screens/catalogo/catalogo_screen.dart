@@ -17,6 +17,7 @@ class CatalogoScreen extends StatefulWidget {
 class _CatalogoScreenState extends State<CatalogoScreen> {
   bool _isLoading = true;
   List<String> _generosVisiveis = [];
+  bool _isAdmin = false; // ← NOVO: Verifica se o usuário é admin
 
   @override
   void initState() {
@@ -46,6 +47,11 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
         if (userDoc.exists) {
           final data = userDoc.data();
+
+          // ✅ NOVO: Verificar se o usuário é admin
+          final tipoUsuario = data?['tipoUsuario'] ?? '';
+          _isAdmin = tipoUsuario == 'admin';
+          print("🎬 Usuário é admin? $_isAdmin");
 
           await appTema.loadThemeFromFirestore();
 
@@ -209,6 +215,21 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   },
                 ),
 
+                // ✅ NOVO: Botão de Admin (só aparece se for admin)
+                if (_isAdmin) ...[
+                  const Divider(height: 1),
+                  _buildMenuItem(
+                    icon: Icons.video_library,
+                    label: 'Gerenciar Vídeos',
+                    isDarkMode: appTema.isDarkMode,
+                    iconColor: Colors.orange,
+                    onTap: () {
+                      Navigator.pop(context);
+                      context.push('/admin/gerenciar-videos');
+                    },
+                  ),
+                ],
+
                 const Divider(height: 1),
 
                 _buildMenuItem(
@@ -218,7 +239,8 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   isDarkMode: appTema.isDarkMode,
                   onTap: () async {
                     Navigator.pop(context);
-                    _fazerLogout();
+                    await FirebaseAuth.instance.signOut();
+                    if (mounted) context.go('/options');
                   },
                 ),
               ],
@@ -235,23 +257,29 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     required bool isDarkMode,
     required VoidCallback onTap,
     bool isDestructive = false,
+    Color? iconColor, // ← NOVO: Cor personalizada para o ícone
   }) {
-    final color = isDestructive
-        ? Colors.red
-        : (isDarkMode ? Colors.white : Colors.black);
-
     return InkWell(
       onTap: onTap,
-      child: Padding(
+      child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(width: 14),
+            Icon(
+              icon,
+              size: 22,
+              color: isDestructive
+                  ? Colors.red
+                  : (iconColor ??
+                        (isDarkMode ? Colors.white70 : Colors.black87)),
+            ),
+            const SizedBox(width: 12),
             Text(
               label,
               style: TextStyle(
-                color: color,
+                color: isDestructive
+                    ? Colors.red
+                    : (isDarkMode ? Colors.white : Colors.black87),
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
               ),
@@ -260,51 +288,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _fazerLogout() async {
-    final appTema = Provider.of<AppTema>(context, listen: false);
-    final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: appTema.isDarkMode ? Colors.grey[900] : Colors.white,
-        title: Text('Sair', style: TextStyle(color: appTema.textColor)),
-        content: Text(
-          'Deseja realmente sair da sua conta?',
-          style: TextStyle(color: appTema.textSecondaryColor),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              'Cancelar',
-              style: TextStyle(color: appTema.textSecondaryColor),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Sair', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      print("════════════════════════════════");
-      print("🚪 FAZENDO LOGOUT");
-      print("   Tema atual: ${appTema.isDarkMode ? 'Escuro' : 'Claro'}");
-
-      await FirebaseAuth.instance.signOut();
-      await perfilProvider.clearPerfilAtivo();
-
-      print("   Tema após logout: ${appTema.isDarkMode ? 'Escuro' : 'Claro'}");
-      print("   (Tema NÃO deve mudar no logout)");
-      print("════════════════════════════════");
-
-      if (mounted) context.go('/options');
-    }
   }
 
   @override
@@ -351,6 +334,41 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                         onPressed: () => context.go('/gerenciamento-pais'),
                       ),
                     const Spacer(),
+
+                    // ✅ NOVO: Badge de Admin (visível mas discreto)
+                    if (_isAdmin)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.orange, width: 1.5),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.admin_panel_settings,
+                              color: Colors.orange,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'ADMIN',
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    const SizedBox(width: 8),
                     const ThemeToggleButton(),
                     const SizedBox(width: 8),
                     GestureDetector(
