@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'app_tema.dart';
-import 'widgets/theme_toggle_button.dart';
+import 'package:bluflix/core/theme/app_theme.dart';
+import 'package:bluflix/presentation/widgets/theme_toggle_button.dart';
 
 class ApelidoFilhoScreen extends StatefulWidget {
   final String selectedAvatar;
@@ -37,10 +37,7 @@ class _ApelidoFilhoScreenState extends State<ApelidoFilhoScreen> {
     // Navega para a tela de preferências passando os dados
     context.push(
       '/preferencias-filho',
-      extra: {
-        'apelido': apelido,
-        'avatar': widget.selectedAvatar,
-      },
+      extra: {'apelido': apelido, 'avatar': widget.selectedAvatar},
     );
   }
 

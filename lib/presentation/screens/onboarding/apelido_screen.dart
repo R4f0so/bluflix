@@ -1,10 +1,10 @@
-import 'widgets/theme_toggle_button.dart';
+import 'package:bluflix/presentation/widgets/theme_toggle_button.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
-import 'app_tema.dart';
+import 'package:bluflix/core/theme/app_theme.dart';
 
 class ApelidoScreen extends StatefulWidget {
   final String selectedAvatar;

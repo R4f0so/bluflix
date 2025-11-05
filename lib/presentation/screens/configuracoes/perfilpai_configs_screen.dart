@@ -3,8 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'app_tema.dart';
-import 'widgets/theme_toggle_button.dart';
+import 'package:bluflix/core/theme/app_theme.dart';
+import 'package:bluflix/presentation/widgets/theme_toggle_button.dart';
 
 class PerfilPaiConfigsScreen extends StatefulWidget {
   const PerfilPaiConfigsScreen({super.key});

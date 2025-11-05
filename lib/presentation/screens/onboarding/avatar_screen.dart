@@ -1,17 +1,17 @@
-import 'widgets/theme_toggle_button.dart';
+import 'package:bluflix/presentation/widgets/theme_toggle_button.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'app_tema.dart';
+import 'package:bluflix/core/theme/app_theme.dart';
 
-class AvatarFilhoScreen extends StatefulWidget {
-  const AvatarFilhoScreen({super.key});
+class AvatarScreen extends StatefulWidget {
+  const AvatarScreen({super.key});
 
   @override
-  State<AvatarFilhoScreen> createState() => _AvatarFilhoScreenState();
+  State<AvatarScreen> createState() => _AvatarScreenState();
 }
 
-class _AvatarFilhoScreenState extends State<AvatarFilhoScreen>
+class _AvatarScreenState extends State<AvatarScreen>
     with SingleTickerProviderStateMixin {
   String? _selectedAvatar;
   late AnimationController _controller;
@@ -74,15 +74,7 @@ class _AvatarFilhoScreenState extends State<AvatarFilhoScreen>
                   children: [
                     Image.asset("assets/logo.png", height: 40),
                     const Spacer(),
-                    const ThemeToggleButton(showLogo: false), // ✅ SEM logo
-                    IconButton(
-                      onPressed: () => context.pop(),
-                      icon: Icon(
-                        Icons.close,
-                        color: appTema.textColor,
-                        size: 28,
-                      ),
-                    ),
+                    const ThemeToggleButton(showLogo: false), // ✅ CORRIGIDO
                   ],
                 ),
               ),
@@ -90,7 +82,7 @@ class _AvatarFilhoScreenState extends State<AvatarFilhoScreen>
               const SizedBox(height: 20),
 
               Text(
-                "Escolha o avatar",
+                "Escolha seu avatar",
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -151,49 +143,28 @@ class _AvatarFilhoScreenState extends State<AvatarFilhoScreen>
                 ),
               ),
 
-              // Botões
+              // Botão Próximo
               Padding(
                 padding: const EdgeInsets.all(20.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 140,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: () => context.pop(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[300],
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text("Voltar"),
+                child: SizedBox(
+                  width: 200,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      context.push('/apelido', extra: _selectedAvatar);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFA9DBF4),
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    const SizedBox(width: 20),
-                    SizedBox(
-                      width: 140,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          context.push(
-                            '/apelido-filho',
-                            extra: _selectedAvatar,
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFA9DBF4),
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text("Próximo"),
-                      ),
+                    child: const Text(
+                      "Próximo",
+                      style: TextStyle(fontSize: 18),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],

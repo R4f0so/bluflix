@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'video_model_youtube.dart';
+import 'package:bluflix/data/models/video_model_youtube.dart';
 
 /// Serviço para gerenciar vídeos do YouTube no Firestore
 class VideoServiceYoutube {

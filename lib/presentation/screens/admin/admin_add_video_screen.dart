@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'app_tema.dart';
-import 'widgets/theme_toggle_button.dart';
-import 'video_service_youtube.dart';
-import 'video_model_youtube.dart';
+import 'package:bluflix/core/theme/app_theme.dart';
+import 'package:bluflix/presentation/widgets/theme_toggle_button.dart';
+import 'package:bluflix/data/services/video_service_youtube.dart';
+import 'package:bluflix/data/models/video_model_youtube.dart';
 
 class AdminAddVideoScreen extends StatefulWidget {
   const AdminAddVideoScreen({super.key});

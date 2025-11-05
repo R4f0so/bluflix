@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'app_tema.dart';
-import 'perfil_provider.dart';
-import 'widgets/theme_toggle_button.dart';
+import 'package:bluflix/core/theme/app_theme.dart';
+import 'package:bluflix/presentation/providers/perfil_provider.dart';
+import 'package:bluflix/presentation/widgets/theme_toggle_button.dart';
 
 class PerfilConfigsScreen extends StatelessWidget {
   const PerfilConfigsScreen({super.key});

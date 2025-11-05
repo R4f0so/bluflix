@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-import 'app_tema.dart';
-import 'video_model_youtube.dart';
+import 'package:bluflix/core/theme/app_theme.dart';
+import 'package:bluflix/data/models/video_model_youtube.dart';
 
 class VideoPlayerYoutubeScreen extends StatefulWidget {
   final VideoModelYoutube video;

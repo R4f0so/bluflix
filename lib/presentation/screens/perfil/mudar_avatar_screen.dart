@@ -3,9 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
-import 'app_tema.dart';
-import 'perfil_provider.dart';
-import 'widgets/theme_toggle_button.dart';
+import 'package:bluflix/core/theme/app_theme.dart';
+import 'package:bluflix/presentation/providers/perfil_provider.dart';
+import 'package:bluflix/presentation/widgets/theme_toggle_button.dart';
 
 class MudarAvatarScreen extends StatefulWidget {
   const MudarAvatarScreen({super.key});
@@ -37,14 +37,14 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
     super.initState();
 
     final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
-    
+
     print("════════════════════════════════");
     print("🎨 MUDAR AVATAR - INIT STATE");
     print("   Perfil Ativo: ${perfilProvider.perfilAtivoApelido}");
     print("   Avatar Atual: ${perfilProvider.perfilAtivoAvatar}");
     print("   É Pai?: ${perfilProvider.isPerfilPai}");
     print("════════════════════════════════");
-    
+
     _selectedAvatar = perfilProvider.perfilAtivoAvatar ?? avatars[0];
 
     _controller = AnimationController(
@@ -101,7 +101,7 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
 
       if (perfilProvider.isPerfilPai) {
         print("   → Salvando avatar do PERFIL PAI");
-        
+
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -118,7 +118,7 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
         print("   ✅ Provider atualizado");
       } else {
         print("   → Salvando avatar do PERFIL FILHO");
-        
+
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -180,7 +180,7 @@ class _MudarAvatarScreenState extends State<MudarAvatarScreen>
       print("════════════════════════════════");
       print('❌ ERRO AO SALVAR AVATAR: $e');
       print("════════════════════════════════");
-      
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
