@@ -22,6 +22,7 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
 
   List<Map<String, dynamic>> _perfisFilhos = [];
   bool _isLoading = true;
+  bool _isAdmin = false; // Verifica se é admin
 
   @override
   void initState() {
@@ -53,6 +54,9 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
       }
 
       final data = userDoc.data();
+
+      final tipoUsuario = data?['tipoUsuario'] ?? '';
+      _isAdmin = tipoUsuario == 'admin';
       final perfisFilhos = data?['perfisFilhos'] as List<dynamic>? ?? [];
 
       print('📊 Total de perfis filhos encontrados: ${perfisFilhos.length}');
@@ -105,10 +109,39 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                           const SizedBox(width: 8),
                           GestureDetector(
                             onTap: _mostrarMenuPerfil,
-                            child: CircleAvatar(
-                              radius: 20,
-                              backgroundImage: AssetImage(userAvatar),
-                            ),
+                            child: _isAdmin
+                                ? Stack(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 20,
+                                        backgroundImage: AssetImage(userAvatar),
+                                      ),
+                                      Positioned(
+                                        bottom: 0,
+                                        right: 0,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: appTema.backgroundColor,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.admin_panel_settings,
+                                            color: Colors.white,
+                                            size: 10,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : CircleAvatar(
+                                    radius: 20,
+                                    backgroundImage: AssetImage(userAvatar),
+                                  ),
                           ),
                         ],
                       ),

@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bluflix/core/theme/app_theme.dart';
 import 'package:bluflix/presentation/providers/perfil_provider.dart';
 import 'package:bluflix/presentation/widgets/theme_toggle_button.dart';

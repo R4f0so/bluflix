@@ -189,16 +189,69 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                     ],
                   ),
                 ),
+
+                _buildMenuItem(
+                  icon: Icons.account_circle_outlined,
+                  label: 'Mudar Avatar',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/mudar-avatar');
+                  },
+                ),
+                _buildMenuItem(
+                  icon: Icons.people_outline,
+                  label: 'Mudar Perfil',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/mudar-perfil');
+                  },
+                ),
+                _buildMenuItem(
+                  icon: Icons.person_add_outlined,
+                  label: 'Adicionar Familiar',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/adicionar-perfis');
+                  },
+                ),
                 _buildMenuItem(
                   icon: Icons.settings_outlined,
                   label: 'Configurações',
                   isDarkMode: appTema.isDarkMode,
                   onTap: () {
                     Navigator.pop(context);
-                    context.push('/perfilpai-configs');
+                    context.push('/perfil-configs');
                   },
                 ),
+
                 const Divider(height: 1),
+
+                _buildMenuItem(
+                  icon: Icons.admin_panel_settings,
+                  label: 'Painel Administrador',
+                  isDarkMode: appTema.isDarkMode,
+                  iconColor: Colors.orange,
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Já está na tela admin
+                  },
+                ),
+                _buildMenuItem(
+                  icon: Icons.video_library,
+                  label: 'Gerenciar Vídeos',
+                  isDarkMode: appTema.isDarkMode,
+                  iconColor: Colors.orange,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/admin/gerenciar-videos');
+                  },
+                ),
+
+                const Divider(height: 1),
+
                 _buildMenuItem(
                   icon: Icons.logout,
                   label: 'Sair',
@@ -224,6 +277,7 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
     required bool isDarkMode,
     required VoidCallback onTap,
     bool isDestructive = false,
+    Color? iconColor,
   }) {
     return InkWell(
       onTap: onTap,
@@ -236,7 +290,8 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
               size: 22,
               color: isDestructive
                   ? Colors.red
-                  : (isDarkMode ? Colors.white70 : Colors.black87),
+                  : (iconColor ??
+                        (isDarkMode ? Colors.white70 : Colors.black87)),
             ),
             const SizedBox(width: 12),
             Text(
@@ -415,7 +470,7 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                     Expanded(
                       child: _buildStatCard(
                         icon: Icons.people,
-                        label: 'Usuários Cadastrados',
+                        label: 'Usuários',
                         value: '$_totalUsuarios',
                         color: Colors.green,
                         appTema: appTema,
@@ -468,6 +523,38 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                         onTap: () => context.push('/perfil-configs'),
                       ),
                     ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ═══════════════════════════════════════════════════════
+              // BOTÃO GERENCIAR PERFIS FILHOS
+              // ═══════════════════════════════════════════════════════
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => context.push('/gerenciamento-pais'),
+                    icon: const Icon(Icons.family_restroom, size: 24),
+                    label: const Text(
+                      'Gerenciar Perfis Filhos',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFA9DBF4),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 4,
+                    ),
                   ),
                 ),
               ),

@@ -215,7 +215,21 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   },
                 ),
 
-                // ✅ NOVO: Botão de Admin (só aparece se for admin)
+                // ✅ NOVO: Botão Painel Admin (só aparece se for admin)
+                if (_isAdmin) ...[
+                  _buildMenuItem(
+                    icon: Icons.admin_panel_settings,
+                    label: 'Painel Administrador',
+                    isDarkMode: appTema.isDarkMode,
+                    iconColor: Colors.orange,
+                    onTap: () {
+                      Navigator.pop(context);
+                      context.go('/gerenciamento-admin');
+                    },
+                  ),
+                ],
+
+                // ✅ Botão de Admin de Vídeos (só aparece se for admin)
                 if (_isAdmin) ...[
                   const Divider(height: 1),
                   _buildMenuItem(
