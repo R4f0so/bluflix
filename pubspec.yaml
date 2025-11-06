@@ -59,10 +59,18 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
 # Configuração do ícone do app
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/logo.png"
+  adaptive_icon_background: "#00000000" # Fundo transparente
+  adaptive_icon_foreground: "assets/logo.png"
+  min_sdk_android: 21
+  remove_alpha_ios: false
+  # Este parâmetro força o logo a ocupar mais espaço no ícone final
+  resize_mode: contain
+
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

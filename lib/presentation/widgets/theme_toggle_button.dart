@@ -63,6 +63,9 @@ class _ThemeToggleButtonState extends State<ThemeToggleButton>
     // Aguarda um pouco antes de trocar o tema (para sincronizar com a animação)
     await Future.delayed(const Duration(milliseconds: 200));
 
+    // ✅ Verifica se o widget ainda está montado antes de usar o context
+    if (!mounted) return;
+
     // Troca o tema
     await appTema.toggleTheme();
   }
@@ -97,7 +100,6 @@ class _ThemeToggleButtonState extends State<ThemeToggleButton>
                     : [],
               ),
               child: IconButton(
-                // ✅ CORRIGIDO: Sol no claro, Lua (amarela) no escuro
                 icon: Icon(
                   appTema.isDarkMode
                       ? Icons

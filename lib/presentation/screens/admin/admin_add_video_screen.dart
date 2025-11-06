@@ -5,6 +5,7 @@ import 'package:bluflix/core/theme/app_theme.dart';
 import 'package:bluflix/presentation/widgets/theme_toggle_button.dart';
 import 'package:bluflix/data/services/video_service_youtube.dart';
 import 'package:bluflix/data/models/video_model_youtube.dart';
+import 'package:bluflix/utils/guards/admin_guard.dart'; // ✅ Adicionado
 
 class AdminAddVideoScreen extends StatefulWidget {
   const AdminAddVideoScreen({super.key});
@@ -34,6 +35,12 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
 
   final List<String> _generosSelecionados = [];
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    AdminGuard.checkAdminAccess(context); // ✅ Verificação adicionada
+  }
 
   @override
   void dispose() {
@@ -78,9 +85,6 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ═══════════════════════════════════════════════════
-                    // INSTRUÇÕES
-                    // ═══════════════════════════════════════════════════
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -96,11 +100,8 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(
-                                Icons.info_outline,
-                                color: Color(0xFFA9DBF4),
-                                size: 24,
-                              ),
+                              const Icon(Icons.info_outline,
+                                  color: Color(0xFFA9DBF4), size: 24),
                               const SizedBox(width: 8),
                               Text(
                                 'Como adicionar vídeos:',
@@ -127,12 +128,7 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 24),
-
-                    // ═══════════════════════════════════════════════════
-                    // CAMPO: LINK DO YOUTUBE
-                    // ═══════════════════════════════════════════════════
                     _buildLabel('Link do YouTube', appTema),
                     TextFormField(
                       controller: _youtubeUrlController,
@@ -160,12 +156,7 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
                         return null;
                       },
                     ),
-
                     const SizedBox(height: 20),
-
-                    // ═══════════════════════════════════════════════════
-                    // CAMPO: TÍTULO
-                    // ═══════════════════════════════════════════════════
                     _buildLabel('Título', appTema),
                     TextFormField(
                       controller: _tituloController,
@@ -190,12 +181,7 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
                         return null;
                       },
                     ),
-
                     const SizedBox(height: 20),
-
-                    // ═══════════════════════════════════════════════════
-                    // CAMPO: DESCRIÇÃO
-                    // ═══════════════════════════════════════════════════
                     _buildLabel('Descrição', appTema),
                     TextFormField(
                       controller: _descricaoController,
@@ -221,21 +207,15 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
                         return null;
                       },
                     ),
-
                     const SizedBox(height: 20),
-
-                    // ═══════════════════════════════════════════════════
-                    // SELEÇÃO DE GÊNEROS
-                    // ═══════════════════════════════════════════════════
                     _buildLabel('Gêneros', appTema),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: _todosGeneros.map((genero) {
-                        final isSelected = _generosSelecionados.contains(
-                          genero,
-                        );
+                        final isSelected =
+                            _generosSelecionados.contains(genero);
                         return FilterChip(
                           label: Text(genero),
                           selected: isSelected,
@@ -261,7 +241,6 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
                         );
                       }).toList(),
                     ),
-
                     if (_generosSelecionados.isEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
@@ -273,12 +252,7 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
                           ),
                         ),
                       ),
-
                     const SizedBox(height: 32),
-
-                    // ═══════════════════════════════════════════════════
-                    // BOTÃO: ADICIONAR
-                    // ═══════════════════════════════════════════════════
                     SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -309,10 +283,6 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // WIDGETS AUXILIARES
-  // ═══════════════════════════════════════════════════════════════
-
   Widget _buildLabel(String texto, AppTema appTema) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -327,17 +297,8 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // AÇÕES
-  // ═══════════════════════════════════════════════════════════════
-
   Future<void> _adicionarVideo() async {
-    // Validar formulário
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    // Validar gêneros
+    if (!_formKey.currentState!.validate()) return;
     if (_generosSelecionados.isEmpty) {
       _mostrarMensagem('Selecione pelo menos um gênero', erro: true);
       return;
@@ -346,7 +307,6 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Adicionar vídeo ao Firestore
       final videoId = await _videoService.adicionarVideo(
         titulo: _tituloController.text.trim(),
         descricao: _descricaoController.text.trim(),
@@ -357,10 +317,7 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
       if (videoId != null) {
         if (!mounted) return;
         _mostrarMensagem('Vídeo adicionado com sucesso!');
-
-        // Aguarda um pouco para o usuário ver a mensagem
         await Future.delayed(const Duration(seconds: 1));
-
         if (!mounted) return;
         context.pop();
       } else {
@@ -369,9 +326,7 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
     } catch (e) {
       _mostrarMensagem('Erro: $e', erro: true);
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

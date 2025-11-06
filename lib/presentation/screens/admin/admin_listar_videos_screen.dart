@@ -5,6 +5,7 @@ import 'package:bluflix/core/theme/app_theme.dart';
 import 'package:bluflix/presentation/widgets/theme_toggle_button.dart';
 import 'package:bluflix/data/services/video_service_youtube.dart';
 import 'package:bluflix/data/models/video_model_youtube.dart';
+import 'package:bluflix/utils/guards/admin_guard.dart'; // ✅ Corrigido
 
 class AdminListarVideosScreen extends StatefulWidget {
   const AdminListarVideosScreen({super.key});
@@ -25,6 +26,7 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
   @override
   void initState() {
     super.initState();
+    AdminGuard.checkAdminAccess(context); // ✅ Adicionado
     _carregarVideos();
   }
 
@@ -38,7 +40,6 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Busca TODOS os vídeos (ativos e inativos) para admin gerenciar
       final videos = await _videoService.buscarTodosVideos();
 
       setState(() {
@@ -57,14 +58,12 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
   void _aplicarFiltros() {
     List<VideoModelYoutube> resultado = List.from(_todosVideos);
 
-    // Filtro por status
     if (_filtroAtual == 'Ativos') {
       resultado = resultado.where((v) => v.ativo).toList();
     } else if (_filtroAtual == 'Inativos') {
       resultado = resultado.where((v) => !v.ativo).toList();
     }
 
-    // Filtro por busca
     final busca = _buscaController.text.toLowerCase();
     if (busca.isNotEmpty) {
       resultado = resultado.where((v) {
@@ -93,7 +92,7 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
           novoStatus ? 'Vídeo ativado!' : 'Vídeo desativado!',
           sucesso: true,
         );
-        _carregarVideos(); // Recarrega a lista
+        _carregarVideos();
       } else {
         _mostrarMensagem('Erro ao alterar status', sucesso: false);
       }
@@ -159,10 +158,7 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'Cancelar',
-              style: TextStyle(color: appTema.textSecondaryColor),
-            ),
+            child: Text('Cancelar', style: TextStyle(color: appTema.textColor)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -187,7 +183,7 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
 
       if (sucesso) {
         _mostrarMensagem('Vídeo excluído com sucesso!', sucesso: true);
-        _carregarVideos(); // Recarrega a lista
+        _carregarVideos();
       } else {
         _mostrarMensagem('Erro ao excluir vídeo', sucesso: false);
       }
@@ -236,9 +232,6 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
             )
           : Column(
               children: [
-                // ═══════════════════════════════════════════════════
-                // HEADER: BUSCA E FILTROS
-                // ═══════════════════════════════════════════════════
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -255,7 +248,6 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
                   ),
                   child: Column(
                     children: [
-                      // Campo de busca
                       TextField(
                         controller: _buscaController,
                         onChanged: (_) => _aplicarFiltros(),
@@ -291,10 +283,7 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 12),
-
-                      // Filtros de status
                       Row(
                         children: [
                           Expanded(child: _buildFiltroChip('Todos', appTema)),
@@ -306,10 +295,7 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 12),
-
-                      // Contador e botão adicionar
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -324,7 +310,7 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
                           ElevatedButton.icon(
                             onPressed: () async {
                               await context.push('/admin-add-video');
-                              _carregarVideos(); // Recarrega após adicionar
+                              _carregarVideos();
                             },
                             icon: const Icon(Icons.add, size: 20),
                             label: const Text('Novo Vídeo'),
@@ -345,10 +331,6 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
                     ],
                   ),
                 ),
-
-                // ═══════════════════════════════════════════════════
-                // LISTA DE VÍDEOS
-                // ═══════════════════════════════════════════════════
                 Expanded(
                   child: _videosFiltrados.isEmpty
                       ? _buildEstadoVazio(appTema)
@@ -369,10 +351,6 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
             ),
     );
   }
-
-  // ═══════════════════════════════════════════════════════════════
-  // WIDGETS AUXILIARES
-  // ═══════════════════════════════════════════════════════════════
 
   Widget _buildFiltroChip(String filtro, AppTema appTema) {
     final isSelected = _filtroAtual == filtro;
@@ -474,7 +452,6 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Thumbnail
           ClipRRect(
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(12),
@@ -500,7 +477,6 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
                     );
                   },
                 ),
-                // Badge de status
                 if (!video.ativo)
                   Positioned(
                     top: 12,
@@ -527,14 +503,11 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
               ],
             ),
           ),
-
-          // Informações
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Título
                 Text(
                   video.titulo,
                   style: TextStyle(
@@ -545,10 +518,7 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-
                 const SizedBox(height: 8),
-
-                // Descrição
                 Text(
                   video.descricao,
                   style: TextStyle(
@@ -558,10 +528,7 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-
                 const SizedBox(height: 12),
-
-                // Gêneros
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
@@ -590,13 +557,9 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
                     );
                   }).toList(),
                 ),
-
                 const SizedBox(height: 16),
-
-                // Botões de ação
                 Row(
                   children: [
-                    // Botão Ativar/Desativar
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => _toggleStatusVideo(video),
@@ -619,10 +582,7 @@ class _AdminListarVideosScreenState extends State<AdminListarVideosScreen> {
                         ),
                       ),
                     ),
-
                     const SizedBox(width: 8),
-
-                    // Botão Excluir
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => _confirmarExclusao(video),

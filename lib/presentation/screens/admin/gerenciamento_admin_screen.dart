@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:bluflix/core/theme/app_theme.dart';
 import 'package:bluflix/presentation/providers/perfil_provider.dart';
 import 'package:bluflix/presentation/widgets/theme_toggle_button.dart';
+import 'package:bluflix/utils/guards/admin_guard.dart'; // ✅ Import adicionado
 
 class GerenciamentoAdminScreen extends StatefulWidget {
   const GerenciamentoAdminScreen({super.key});
@@ -25,6 +26,7 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
   @override
   void initState() {
     super.initState();
+    AdminGuard.checkAdminAccess(context); // ✅ Verificação adicionada
     _carregarDadosAdmin();
   }
 
@@ -34,7 +36,6 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // Carregar dados do admin
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -45,7 +46,6 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
           _adminNome = data?['apelido'] ?? 'Admin';
           _adminAvatar = data?['avatar'] ?? 'assets/avatar1.png';
 
-          // Configurar perfil ativo como pai
           final perfilProvider = Provider.of<PerfilProvider>(
             context,
             listen: false,
@@ -57,14 +57,12 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
           );
         }
 
-        // Contar total de vídeos
         final videosSnapshot = await FirebaseFirestore.instance
             .collection('videos_youtube')
             .where('ativo', isEqualTo: true)
             .get();
         _totalVideos = videosSnapshot.docs.length;
 
-        // Contar total de usuários
         final usersSnapshot = await FirebaseFirestore.instance
             .collection('users')
             .get();
@@ -189,69 +187,16 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                     ],
                   ),
                 ),
-
-                _buildMenuItem(
-                  icon: Icons.account_circle_outlined,
-                  label: 'Mudar Avatar',
-                  isDarkMode: appTema.isDarkMode,
-                  onTap: () {
-                    Navigator.pop(context);
-                    context.push('/mudar-avatar');
-                  },
-                ),
-                _buildMenuItem(
-                  icon: Icons.people_outline,
-                  label: 'Mudar Perfil',
-                  isDarkMode: appTema.isDarkMode,
-                  onTap: () {
-                    Navigator.pop(context);
-                    context.push('/mudar-perfil');
-                  },
-                ),
-                _buildMenuItem(
-                  icon: Icons.person_add_outlined,
-                  label: 'Adicionar Familiar',
-                  isDarkMode: appTema.isDarkMode,
-                  onTap: () {
-                    Navigator.pop(context);
-                    context.push('/adicionar-perfis');
-                  },
-                ),
                 _buildMenuItem(
                   icon: Icons.settings_outlined,
                   label: 'Configurações',
                   isDarkMode: appTema.isDarkMode,
                   onTap: () {
                     Navigator.pop(context);
-                    context.push('/perfil-configs');
+                    context.push('/perfilpai-configs');
                   },
                 ),
-
                 const Divider(height: 1),
-
-                _buildMenuItem(
-                  icon: Icons.admin_panel_settings,
-                  label: 'Painel Administrador',
-                  isDarkMode: appTema.isDarkMode,
-                  iconColor: Colors.orange,
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Já está na tela admin
-                  },
-                ),
-                _buildMenuItem(
-                  icon: Icons.video_library,
-                  label: 'Gerenciar Vídeos',
-                  isDarkMode: appTema.isDarkMode,
-                  iconColor: Colors.orange,
-                  onTap: () {
-                    Navigator.pop(context);
-                    context.push('/admin/gerenciar-videos');
-                  },
-                ),
-
-                const Divider(height: 1),
-
                 _buildMenuItem(
                   icon: Icons.logout,
                   label: 'Sair',
@@ -277,7 +222,6 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
     required bool isDarkMode,
     required VoidCallback onTap,
     bool isDestructive = false,
-    Color? iconColor,
   }) {
     return InkWell(
       onTap: onTap,
@@ -290,8 +234,7 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
               size: 22,
               color: isDestructive
                   ? Colors.red
-                  : (iconColor ??
-                        (isDarkMode ? Colors.white70 : Colors.black87)),
+                  : (isDarkMode ? Colors.white70 : Colors.black87),
             ),
             const SizedBox(width: 12),
             Text(
@@ -336,9 +279,6 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // ═══════════════════════════════════════════════════════
-              // APPBAR
-              // ═══════════════════════════════════════════════════════
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
@@ -380,10 +320,6 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                   ],
                 ),
               ),
-
-              // ═══════════════════════════════════════════════════════
-              // SAUDAÇÃO + BADGE ADMIN
-              // ═══════════════════════════════════════════════════════
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -449,10 +385,6 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                   ],
                 ),
               ),
-
-              // ═══════════════════════════════════════════════════════
-              // ESTATÍSTICAS
-              // ═══════════════════════════════════════════════════════
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
@@ -470,7 +402,7 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                     Expanded(
                       child: _buildStatCard(
                         icon: Icons.people,
-                        label: 'Usuários',
+                        label: 'Usuários Cadastrados',
                         value: '$_totalUsuarios',
                         color: Colors.green,
                         appTema: appTema,
@@ -479,12 +411,7 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 32),
-
-              // ═══════════════════════════════════════════════════════
-              // AÇÕES PRINCIPAIS
-              // ═══════════════════════════════════════════════════════
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -526,39 +453,6 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                   ),
                 ),
               ),
-
-              const SizedBox(height: 16),
-
-              // ═══════════════════════════════════════════════════════
-              // BOTÃO GERENCIAR PERFIS FILHOS
-              // ═══════════════════════════════════════════════════════
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => context.push('/gerenciamento-pais'),
-                    icon: const Icon(Icons.family_restroom, size: 24),
-                    label: const Text(
-                      'Gerenciar Perfis Filhos',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFA9DBF4),
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 4,
-                    ),
-                  ),
-                ),
-              ),
-
               const SizedBox(height: 20),
             ],
           ),

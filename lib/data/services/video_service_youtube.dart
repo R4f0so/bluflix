@@ -1,6 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:bluflix/data/models/video_model_youtube.dart';
 
+/// Exceção customizada para erros do serviço de vídeo
+class VideoServiceException implements Exception {
+  final String message;
+  VideoServiceException(this.message);
+
+  @override
+  String toString() => 'VideoServiceException: $message';
+}
+
 /// Serviço para gerenciar vídeos do YouTube no Firestore
 class VideoServiceYoutube {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -23,7 +32,9 @@ class VideoServiceYoutube {
           .toList();
     } catch (e) {
       print('❌ Erro ao buscar vídeos: $e');
-      return [];
+      throw VideoServiceException(
+        'Não foi possível carregar os vídeos. Tente novamente.',
+      );
     }
   }
 
@@ -51,14 +62,12 @@ class VideoServiceYoutube {
     List<String> generos,
   ) async {
     try {
-      // Busca vídeos que contenham pelo menos um dos gêneros
       final query = await _firestore
           .collection('videos_youtube')
           .where('ativo', isEqualTo: true)
           .orderBy('dataUpload', descending: true)
           .get();
 
-      // Filtra manualmente para incluir vídeos que tenham qualquer um dos gêneros
       final videos = query.docs
           .map((doc) => VideoModelYoutube.fromFirestore(doc))
           .where(
@@ -95,8 +104,6 @@ class VideoServiceYoutube {
   // ADICIONAR VÍDEO (APENAS ADMIN)
   // ═══════════════════════════════════════════════════════════════
 
-  /// Adiciona um novo vídeo do YouTube ao Firestore
-  /// Retorna o ID do documento criado ou null se houver erro
   Future<String?> adicionarVideo({
     required String titulo,
     required String descricao,
@@ -104,7 +111,6 @@ class VideoServiceYoutube {
     required List<String> generos,
   }) async {
     try {
-      // Extrai o ID do YouTube da URL
       final youtubeId = VideoModelYoutube.extractYoutubeId(youtubeUrl);
 
       if (youtubeId == null) {
@@ -112,7 +118,6 @@ class VideoServiceYoutube {
         return null;
       }
 
-      // Cria o mapa de dados
       final videoData = {
         'titulo': titulo,
         'descricao': descricao,
@@ -123,7 +128,6 @@ class VideoServiceYoutube {
         'ativo': true,
       };
 
-      // Adiciona ao Firestore
       final docRef = await _firestore
           .collection('videos_youtube')
           .add(videoData);
@@ -140,7 +144,6 @@ class VideoServiceYoutube {
   // ATUALIZAR VÍDEO (APENAS ADMIN)
   // ═══════════════════════════════════════════════════════════════
 
-  /// Atualiza um vídeo existente
   Future<bool> atualizarVideo({
     required String videoId,
     String? titulo,
@@ -187,7 +190,6 @@ class VideoServiceYoutube {
   // EXCLUIR VÍDEO (APENAS ADMIN)
   // ═══════════════════════════════════════════════════════════════
 
-  /// Exclui um vídeo do Firestore
   Future<bool> excluirVideo(String videoId) async {
     try {
       await _firestore.collection('videos_youtube').doc(videoId).delete();
@@ -200,7 +202,6 @@ class VideoServiceYoutube {
     }
   }
 
-  /// Desativa um vídeo (soft delete)
   Future<bool> desativarVideo(String videoId) async {
     try {
       await _firestore.collection('videos_youtube').doc(videoId).update({
@@ -219,7 +220,6 @@ class VideoServiceYoutube {
   // ANALYTICS (VISUALIZAÇÕES)
   // ═══════════════════════════════════════════════════════════════
 
-  /// Registra uma visualização do vídeo
   Future<void> registrarVisualizacao(String videoId, String userId) async {
     try {
       await _firestore
@@ -234,7 +234,6 @@ class VideoServiceYoutube {
     }
   }
 
-  /// Busca o total de visualizações de um vídeo
   Future<int> buscarTotalVisualizacoes(String videoId) async {
     try {
       final query = await _firestore
