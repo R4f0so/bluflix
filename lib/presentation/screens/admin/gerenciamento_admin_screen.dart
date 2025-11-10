@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:bluflix/core/theme/app_theme.dart';
 import 'package:bluflix/presentation/providers/perfil_provider.dart';
 import 'package:bluflix/presentation/widgets/theme_toggle_button.dart';
-import 'package:bluflix/utils/guards/admin_guard.dart'; // ✅ Import adicionado
+import 'package:bluflix/utils/guards/admin_guard.dart';
 
 class GerenciamentoAdminScreen extends StatefulWidget {
   const GerenciamentoAdminScreen({super.key});
@@ -26,7 +26,7 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
   @override
   void initState() {
     super.initState();
-    AdminGuard.checkAdminAccess(context); // ✅ Verificação adicionada
+    AdminGuard.checkAdminAccess(context);
     _carregarDadosAdmin();
   }
 
@@ -46,15 +46,17 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
           _adminNome = data?['apelido'] ?? 'Admin';
           _adminAvatar = data?['avatar'] ?? 'assets/avatar1.png';
 
-          final perfilProvider = Provider.of<PerfilProvider>(
-            context,
-            listen: false,
-          );
-          await perfilProvider.setPerfilAtivo(
-            apelido: _adminNome,
-            avatar: _adminAvatar,
-            isPai: true,
-          );
+          if (mounted) {
+            final perfilProvider = Provider.of<PerfilProvider>(
+              context,
+              listen: false,
+            );
+            await perfilProvider.setPerfilAtivo(
+              apelido: _adminNome,
+              avatar: _adminAvatar,
+              isPai: true,
+            );
+          }
         }
 
         final videosSnapshot = await FirebaseFirestore.instance
@@ -165,7 +167,7 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.orange.withOpacity(0.2),
+                                color: Colors.orange.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: Colors.orange,
@@ -187,16 +189,80 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                     ],
                   ),
                 ),
+
+                // Mudar Avatar
+                _buildMenuItem(
+                  icon: Icons.account_circle_outlined,
+                  label: 'Mudar Avatar',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/mudar-avatar');
+                  },
+                ),
+
+                // Mudar Perfil
+                _buildMenuItem(
+                  icon: Icons.people_outline,
+                  label: 'Mudar Perfil',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/mudar-perfil');
+                  },
+                ),
+
+                // Adicionar Familiar
+                _buildMenuItem(
+                  icon: Icons.person_add_outlined,
+                  label: 'Adicionar Familiar',
+                  isDarkMode: appTema.isDarkMode,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/adicionar-perfis');
+                  },
+                ),
+
+                // Configurações
                 _buildMenuItem(
                   icon: Icons.settings_outlined,
                   label: 'Configurações',
                   isDarkMode: appTema.isDarkMode,
                   onTap: () {
                     Navigator.pop(context);
-                    context.push('/perfilpai-configs');
+                    context.push('/perfil-configs');
                   },
                 ),
+
                 const Divider(height: 1),
+
+                // Painel Administrador
+                _buildMenuItem(
+                  icon: Icons.admin_panel_settings,
+                  label: 'Painel Administrador',
+                  isDarkMode: appTema.isDarkMode,
+                  iconColor: Colors.orange,
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Já está na tela, apenas fecha o menu
+                  },
+                ),
+
+                // Gerenciar Vídeos
+                _buildMenuItem(
+                  icon: Icons.video_library,
+                  label: 'Gerenciar Vídeos',
+                  isDarkMode: appTema.isDarkMode,
+                  iconColor: Colors.orange,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/admin/gerenciar-videos');
+                  },
+                ),
+
+                const Divider(height: 1),
+
+                // Sair
                 _buildMenuItem(
                   icon: Icons.logout,
                   label: 'Sair',
@@ -205,7 +271,7 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                   onTap: () async {
                     Navigator.pop(context);
                     await FirebaseAuth.instance.signOut();
-                    if (mounted) context.go('/options');
+                    if (context.mounted) context.go('/options');
                   },
                 ),
               ],
@@ -222,6 +288,7 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
     required bool isDarkMode,
     required VoidCallback onTap,
     bool isDestructive = false,
+    Color? iconColor,
   }) {
     return InkWell(
       onTap: onTap,
@@ -234,7 +301,8 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
               size: 22,
               color: isDestructive
                   ? Colors.red
-                  : (isDarkMode ? Colors.white70 : Colors.black87),
+                  : (iconColor ??
+                        (isDarkMode ? Colors.white70 : Colors.black87)),
             ),
             const SizedBox(width: 12),
             Text(
@@ -345,7 +413,7 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.2),
+                            color: Colors.orange.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: Colors.orange,
@@ -485,7 +553,7 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                 ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -534,10 +602,10 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                   ],
           ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.4), width: 2),
+          border: Border.all(color: color.withValues(alpha: 0.4), width: 2),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha: 0.2),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -549,7 +617,7 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
+                color: color.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 40),

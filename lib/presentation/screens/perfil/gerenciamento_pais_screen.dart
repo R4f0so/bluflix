@@ -22,7 +22,7 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
 
   List<Map<String, dynamic>> _perfisFilhos = [];
   bool _isLoading = true;
-  bool _isAdmin = false; // Verifica se é admin
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -30,7 +30,6 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
     _carregarPerfisFilhos();
   }
 
-  // ✅ CORRIGIDO: Lê do array perfisFilhos
   Future<void> _carregarPerfisFilhos() async {
     setState(() => _isLoading = true);
 
@@ -44,7 +43,6 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
 
       print('🔍 Buscando perfis filhos para userId: ${user.uid}');
 
-      // ✅ Lê do documento do usuário (array)
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
 
       if (!userDoc.exists) {
@@ -78,9 +76,20 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
   @override
   Widget build(BuildContext context) {
     final appTema = Provider.of<AppTema>(context);
+    // ✅ IMPORTANTE: listen: true para rebuild quando perfil mudar
     final perfilProvider = Provider.of<PerfilProvider>(context);
     final userName = perfilProvider.perfilAtivoApelido ?? 'Usuário';
     final userAvatar = perfilProvider.perfilAtivoAvatar ?? 'assets/avatar1.png';
+
+    // ✅ Calcula diretamente aqui, usando o provider que está sendo observado
+    final bool mostrarOpcoesAdmin = _isAdmin && perfilProvider.isPerfilPai;
+
+    // 🔍 DEBUG: Verificar valores
+    print('🔍 DEBUG gerenciamento_pais_screen BUILD:');
+    print('   _isAdmin: $_isAdmin');
+    print('   perfilProvider.isPerfilPai: ${perfilProvider.isPerfilPai}');
+    print('   userName: $userName');
+    print('   mostrarOpcoesAdmin: $mostrarOpcoesAdmin');
 
     return Scaffold(
       body: Container(
@@ -108,8 +117,8 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                           const ThemeToggleButton(),
                           const SizedBox(width: 8),
                           GestureDetector(
-                            onTap: _mostrarMenuPerfil,
-                            child: _isAdmin
+                            onTap: () => _mostrarMenuPerfil(mostrarOpcoesAdmin),
+                            child: mostrarOpcoesAdmin
                                 ? Stack(
                                     children: [
                                       CircleAvatar(
@@ -285,10 +294,6 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // WIDGETS
-  // ═══════════════════════════════════════════════════════════════
-
   Widget _buildCardAdicionarFamiliar(AppTema appTema) {
     return GestureDetector(
       onTap: () async {
@@ -418,23 +423,29 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
     required bool isDarkMode,
     required VoidCallback onTap,
     bool isDestructive = false,
+    Color? iconColor,
   }) {
-    final color = isDestructive
-        ? Colors.red
-        : (isDarkMode ? Colors.white : Colors.black);
-
     return InkWell(
       onTap: onTap,
-      child: Padding(
+      child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(width: 14),
+            Icon(
+              icon,
+              size: 22,
+              color: isDestructive
+                  ? Colors.red
+                  : (iconColor ??
+                        (isDarkMode ? Colors.white70 : Colors.black87)),
+            ),
+            const SizedBox(width: 12),
             Text(
               label,
               style: TextStyle(
-                color: color,
+                color: isDestructive
+                    ? Colors.red
+                    : (isDarkMode ? Colors.white : Colors.black87),
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
               ),
@@ -445,15 +456,17 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // AÇÕES
-  // ═══════════════════════════════════════════════════════════════
-
-  void _mostrarMenuPerfil() {
+  void _mostrarMenuPerfil(bool mostrarOpcoesAdmin) {
     final appTema = Provider.of<AppTema>(context, listen: false);
     final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
     final userName = perfilProvider.perfilAtivoApelido ?? 'Usuário';
     final userAvatar = perfilProvider.perfilAtivoAvatar ?? 'assets/avatar1.png';
+
+    // 🔍 DEBUG
+    print('🔍 DEBUG _mostrarMenuPerfil:');
+    print('   _isAdmin: $_isAdmin');
+    print('   perfilProvider.isPerfilPai: ${perfilProvider.isPerfilPai}');
+    print('   mostrarOpcoesAdmin (parâmetro): $mostrarOpcoesAdmin');
 
     showDialog(
       context: context,
@@ -492,9 +505,36 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                   ),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundImage: AssetImage(userAvatar),
+                      Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 28,
+                            backgroundImage: AssetImage(userAvatar),
+                          ),
+                          if (mostrarOpcoesAdmin)
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: appTema.isDarkMode
+                                        ? Colors.grey[900]!
+                                        : Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.admin_panel_settings,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -509,11 +549,34 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            Text(
-                              'Perfil Principal',
-                              style: TextStyle(
-                                color: appTema.textSecondaryColor,
-                                fontSize: 12,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: mostrarOpcoesAdmin
+                                    ? Colors.orange.withValues(alpha: 0.2)
+                                    : Colors.blue.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: mostrarOpcoesAdmin
+                                      ? Colors.orange
+                                      : Colors.blue,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                mostrarOpcoesAdmin
+                                    ? 'ADMINISTRADOR'
+                                    : 'PERFIL PRINCIPAL',
+                                style: TextStyle(
+                                  color: mostrarOpcoesAdmin
+                                      ? Colors.orange
+                                      : Colors.blue,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ],
@@ -562,6 +625,33 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                   },
                 ),
 
+                // Opções de Admin (apenas se for admin E perfil pai ativo)
+                if (mostrarOpcoesAdmin) ...[
+                  const Divider(height: 1),
+
+                  _buildMenuItem(
+                    icon: Icons.admin_panel_settings,
+                    label: 'Painel Administrador',
+                    isDarkMode: appTema.isDarkMode,
+                    iconColor: Colors.orange,
+                    onTap: () {
+                      Navigator.pop(context);
+                      context.push('/gerenciamento-admin');
+                    },
+                  ),
+
+                  _buildMenuItem(
+                    icon: Icons.video_library,
+                    label: 'Gerenciar Vídeos',
+                    isDarkMode: appTema.isDarkMode,
+                    iconColor: Colors.orange,
+                    onTap: () {
+                      Navigator.pop(context);
+                      context.push('/admin/gerenciar-videos');
+                    },
+                  ),
+                ],
+
                 const Divider(height: 1),
 
                 _buildMenuItem(
@@ -601,19 +691,16 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
               label: 'Editar Perfil',
               isDarkMode: appTema.isDarkMode,
               onTap: () async {
-                // ✅ Captura o navigator antes de operações assíncronas
                 final navigator = Navigator.of(modalContext);
                 final scaffoldMessenger = ScaffoldMessenger.of(context);
                 final router = GoRouter.of(context);
 
                 navigator.pop();
 
-                // ✅ CORREÇÃO: Recarrega dados antes de editar
                 await _carregarPerfisFilhos();
 
                 if (!mounted) return;
 
-                // ✅ Verifica se o índice ainda é válido após reload
                 if (index >= _perfisFilhos.length) {
                   scaffoldMessenger.showSnackBar(
                     const SnackBar(
@@ -626,30 +713,25 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                   return;
                 }
 
-                // ✅ SOLICITA PIN ANTES DE EDITAR
                 if (!mounted) return;
                 final pinVerificado = await VerificarPinDialog.verificar(
                   context,
                 );
                 if (!pinVerificado || !mounted) return;
 
-                // ✅ NAVEGA PARA TELA DE EDIÇÃO com dados atualizados
                 final resultado = await router.push(
                   '/editar-perfil-filho',
                   extra: {
                     'perfilIndex': index,
-                    'perfilAtual':
-                        _perfisFilhos[index], // Usa dados atualizados
+                    'perfilAtual': _perfisFilhos[index],
                   },
                 );
 
-                // ✅ Se editou com sucesso, recarrega e atualiza provider se necessário
                 if (resultado == true && mounted) {
                   await _carregarPerfisFilhos();
 
                   if (!mounted) return;
 
-                  // ✅ CORREÇÃO: Atualiza provider se o perfil editado estiver ativo
                   final perfilProvider = Provider.of<PerfilProvider>(
                     context,
                     listen: false,
@@ -659,7 +741,6 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                       index < _perfisFilhos.length) {
                     final perfilEditado = _perfisFilhos[index];
 
-                    // Se o perfil ativo foi editado, atualiza o provider
                     if (perfilProvider.perfilAtivoApelido ==
                         perfil['apelido']) {
                       await perfilProvider.setPerfilAtivo(
@@ -699,7 +780,6 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
     );
   }
 
-  // ✅ CORRIGIDO: Seleciona perfil do array
   Future<void> _selecionarPerfilFilho(Map<String, dynamic> perfil) async {
     print("🔵 _selecionarPerfilFilho chamado");
     print("   Perfil selecionado: ${perfil['apelido']}");
@@ -712,7 +792,6 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
     print("   Apelido: $apelido");
     print("   Avatar: $avatar");
 
-    // 🔒 Solicita PIN do perfil PAI para trocar
     if (!mounted) return;
 
     final pinVerificado = await VerificarPinDialog.verificar(context);
@@ -739,20 +818,17 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
     context.go('/catalogo');
   }
 
-  // ✅ CORRIGIDO: Exclui do array
   Future<void> _confirmarExclusao(int index) async {
     final appTema = Provider.of<AppTema>(context, listen: false);
     final perfil = _perfisFilhos[index];
     final apelido = perfil['apelido'] ?? 'este perfil';
 
-    // Solicita PIN
     if (!mounted) return;
     final pinVerificado = await VerificarPinDialog.verificar(context);
     if (!pinVerificado) return;
 
     if (!mounted) return;
 
-    // Confirmação
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -802,7 +878,6 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
     }
   }
 
-  // ✅ CORRIGIDO: Remove do array
   Future<void> _excluirPerfilFilho(int index) async {
     try {
       final user = _auth.currentUser;
@@ -814,10 +889,8 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
       final perfilExcluido = _perfisFilhos[index];
       final apelidoExcluido = perfilExcluido['apelido'];
 
-      // Remove do array local
       _perfisFilhos.removeAt(index);
 
-      // Atualiza no Firestore
       await _firestore.collection('users').doc(user.uid).update({
         'perfisFilhos': _perfisFilhos,
       });
@@ -831,7 +904,6 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
         listen: false,
       );
 
-      // Se excluiu o perfil ativo, volta para o perfil pai
       if (perfilProvider.perfilAtivoApelido == apelidoExcluido) {
         final userDoc = await _firestore
             .collection('users')

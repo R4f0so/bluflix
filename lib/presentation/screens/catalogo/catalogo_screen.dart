@@ -17,7 +17,7 @@ class CatalogoScreen extends StatefulWidget {
 class _CatalogoScreenState extends State<CatalogoScreen> {
   bool _isLoading = true;
   List<String> _generosVisiveis = [];
-  bool _isAdmin = false; // ← NOVO: Verifica se o usuário é admin
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -48,7 +48,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         if (userDoc.exists) {
           final data = userDoc.data();
 
-          // ✅ NOVO: Verificar se o usuário é admin
+          // ✅ Verificar se o usuário é admin
           final tipoUsuario = data?['tipoUsuario'] ?? '';
           _isAdmin = tipoUsuario == 'admin';
           print("🎬 Usuário é admin? $_isAdmin");
@@ -85,7 +85,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               );
 
               if (perfilFilhoAtual != null) {
-                // ✅ PADRONIZADO: usa 'interesses'
                 final interesses =
                     perfilFilhoAtual['interesses'] as List<dynamic>? ?? [];
                 _generosVisiveis = List<String>.from(interesses);
@@ -102,11 +101,17 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     }
   }
 
-  void _mostrarMenuPerfil() {
+  void _mostrarMenuPerfil(bool mostrarOpcoesAdmin) {
     final appTema = Provider.of<AppTema>(context, listen: false);
     final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
     final userName = perfilProvider.perfilAtivoApelido ?? 'Usuário';
     final userAvatar = perfilProvider.perfilAtivoAvatar ?? 'assets/avatar1.png';
+
+    // 🔍 DEBUG
+    print('🔍 DEBUG _mostrarMenuPerfil (catalogo):');
+    print('   _isAdmin: $_isAdmin');
+    print('   perfilProvider.isPerfilPai: ${perfilProvider.isPerfilPai}');
+    print('   mostrarOpcoesAdmin (parâmetro): $mostrarOpcoesAdmin');
 
     showDialog(
       context: context,
@@ -145,9 +150,36 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   ),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundImage: AssetImage(userAvatar),
+                      Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 28,
+                            backgroundImage: AssetImage(userAvatar),
+                          ),
+                          if (mostrarOpcoesAdmin)
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: appTema.isDarkMode
+                                        ? Colors.grey[900]!
+                                        : Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.admin_panel_settings,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -162,13 +194,34 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            Text(
-                              perfilProvider.isPerfilPai
-                                  ? 'Perfil Principal'
-                                  : 'Perfil Filho',
-                              style: TextStyle(
-                                color: appTema.textSecondaryColor,
-                                fontSize: 12,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: mostrarOpcoesAdmin
+                                    ? Colors.orange.withValues(alpha: 0.2)
+                                    : Colors.blue.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: mostrarOpcoesAdmin
+                                      ? Colors.orange
+                                      : Colors.blue,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                mostrarOpcoesAdmin
+                                    ? 'ADMINISTRADOR'
+                                    : 'PERFIL PRINCIPAL',
+                                style: TextStyle(
+                                  color: mostrarOpcoesAdmin
+                                      ? Colors.orange
+                                      : Colors.blue,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ],
@@ -215,8 +268,10 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   },
                 ),
 
-                // ✅ NOVO: Botão Painel Admin (só aparece se for admin)
-                if (_isAdmin) ...[
+                // ✅ Opções de Admin (apenas se for admin E perfil pai ativo)
+                if (mostrarOpcoesAdmin) ...[
+                  const Divider(height: 1),
+
                   _buildMenuItem(
                     icon: Icons.admin_panel_settings,
                     label: 'Painel Administrador',
@@ -227,11 +282,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       context.go('/gerenciamento-admin');
                     },
                   ),
-                ],
 
-                // ✅ Botão de Admin de Vídeos (só aparece se for admin)
-                if (_isAdmin) ...[
-                  const Divider(height: 1),
                   _buildMenuItem(
                     icon: Icons.video_library,
                     label: 'Gerenciar Vídeos',
@@ -271,7 +322,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     required bool isDarkMode,
     required VoidCallback onTap,
     bool isDestructive = false,
-    Color? iconColor, // ← NOVO: Cor personalizada para o ícone
+    Color? iconColor,
   }) {
     return InkWell(
       onTap: onTap,
@@ -307,9 +358,20 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   @override
   Widget build(BuildContext context) {
     final appTema = Provider.of<AppTema>(context);
+    // ✅ listen: true para rebuild quando perfil mudar
     final perfilProvider = Provider.of<PerfilProvider>(context);
     final userName = perfilProvider.perfilAtivoApelido ?? 'Usuário';
     final userAvatar = perfilProvider.perfilAtivoAvatar ?? 'assets/avatar1.png';
+
+    // ✅ Calcula se deve mostrar opções de admin
+    final bool mostrarOpcoesAdmin = _isAdmin && perfilProvider.isPerfilPai;
+
+    // 🔍 DEBUG
+    print('🔍 DEBUG catalogo_screen BUILD:');
+    print('   _isAdmin: $_isAdmin');
+    print('   perfilProvider.isPerfilPai: ${perfilProvider.isPerfilPai}');
+    print('   userName: $userName');
+    print('   mostrarOpcoesAdmin: $mostrarOpcoesAdmin');
 
     if (_isLoading) {
       return Scaffold(
@@ -333,9 +395,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // ═══════════════════════════════════════════════════════
-              // APPBAR - SETA VOLTAR (SÓ PARA PAI), TEMA E AVATAR
-              // ═══════════════════════════════════════════════════════
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
@@ -349,27 +408,27 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       ),
                     const Spacer(),
 
-                    // ✅ NOVO: Badge de Admin (visível mas discreto)
-                    if (_isAdmin)
+                    // ✅ Badge de Admin (apenas se for admin E perfil pai)
+                    if (mostrarOpcoesAdmin)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.2),
+                          color: Colors.orange.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: Colors.orange, width: 1.5),
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.admin_panel_settings,
                               color: Colors.orange,
                               size: 16,
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Text(
                               'ADMIN',
                               style: TextStyle(
@@ -386,7 +445,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                     const ThemeToggleButton(),
                     const SizedBox(width: 8),
                     GestureDetector(
-                      onTap: _mostrarMenuPerfil,
+                      onTap: () => _mostrarMenuPerfil(mostrarOpcoesAdmin),
                       child: CircleAvatar(
                         radius: 20,
                         backgroundImage: AssetImage(userAvatar),
@@ -396,9 +455,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 ),
               ),
 
-              // ═══════════════════════════════════════════════════════
-              // SAUDAÇÃO
-              // ═══════════════════════════════════════════════════════
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -417,9 +473,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 ),
               ),
 
-              // ═══════════════════════════════════════════════════════
-              // GRADE DE GÊNEROS
-              // ═══════════════════════════════════════════════════════
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -498,9 +551,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // WIDGET: CARD DE GÊNERO
-  // ═══════════════════════════════════════════════════════════════
   Widget _buildGeneroCard({
     required String emoji,
     required String genero,
