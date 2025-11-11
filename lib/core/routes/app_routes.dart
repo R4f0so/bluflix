@@ -26,6 +26,7 @@ import 'package:bluflix/presentation/screens/admin/admin_gerenciar_videos_screen
 import 'package:bluflix/presentation/screens/admin/admin_add_video_screen.dart';
 import 'package:bluflix/presentation/screens/admin/admin_listar_videos_screen.dart';
 import 'package:bluflix/data/models/video_model_youtube.dart';
+import 'package:bluflix/presentation/screens/analytics/perfil_filho_analytics_screen.dart';
 
 /// Configuração de rotas do app
 class AppRoutes {
@@ -220,6 +221,18 @@ class AppRoutes {
         path: '/admin-videos',
         name: 'admin-listar-videos',
         builder: (context, state) => const AdminListarVideosScreen(),
+      ),
+
+      // ═══════════════════════════════════════════════════════════════
+      // ROTAS
+      // ═══════════════════════════════════════════════════════════════
+      GoRoute(
+        path: '/analytics/:perfilFilhoApelido',
+        name: 'perfil-filho-analytics',
+        builder: (context, state) {
+        final perfilFilhoApelido = state.pathParameters['perfilFilhoApelido']!;
+        return PerfilFilhoAnalyticsScreen(perfilFilhoApelido: perfilFilhoApelido);
+        },
       ),
     ],
   );

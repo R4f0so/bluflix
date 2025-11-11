@@ -62,13 +62,19 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/logo.png"
-  adaptive_icon_background: "#00000000" # Fundo transparente
-  adaptive_icon_foreground: "assets/logo.png"
+  image_path: "assets/logo_1024.png"
+  adaptive_icon_background: "#A9DBF4"
+  adaptive_icon_foreground: "assets/logo_1024.png"
+  remove_alpha_ios: true
   min_sdk_android: 21
-  remove_alpha_ios: false
-  # Este parâmetro força o logo a ocupar mais espaço no ícone final
-  resize_mode: contain
+  adaptive_icon_foreground_inset: 16
+  adaptive_icon_round: "assets/logo_1024.png"
+  
+  # Para web (se usar)
+  web:
+    generate: true
+    image_path: "assets/logo_1024.png"
+    background_color: "#A9DBF4"
 
 
 

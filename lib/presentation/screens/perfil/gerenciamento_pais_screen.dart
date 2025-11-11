@@ -411,6 +411,28 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: () {
+                context.push('/analytics/$apelido');
+              },
+              icon: const Icon(Icons.analytics, size: 18),
+              label: const Text(
+                'Analytics',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
           ],
         ),
       ),
