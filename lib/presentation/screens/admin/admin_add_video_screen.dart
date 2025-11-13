@@ -23,14 +23,15 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
   final _youtubeUrlController = TextEditingController();
 
   final List<String> _todosGeneros = [
-    'Ação',
-    'Comédia',
-    'Drama',
-    'Terror',
-    'Ficção Científica',
-    'Romance',
+    'Relaxamento',
     'Animação',
-    'Documentário',
+    'Drama',
+    'Música',
+    'Natureza Científica',
+    'Ciências',
+    'Arte',
+    'Histórias',
+    'Jogos',
   ];
 
   final List<String> _generosSelecionados = [];
