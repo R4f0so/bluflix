@@ -483,7 +483,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                     childAspectRatio: 1.1,
                     children: [
                       // ✅ ATUALIZADO: Novos gêneros educacionais com emojis apropriados
-                      if (_generosVisiveis.contains('Educação'))
+                      if (_generosVisiveis.contains('Relaxamento'))
                         _buildGeneroCard(
                           emoji: '😴',
                           genero: 'Relaxamento',
