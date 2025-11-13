@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'package:bluflix/core/theme/app_theme.dart';
@@ -9,8 +10,14 @@ import 'package:bluflix/presentation/providers/perfil_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Inicializar Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print("Firebase inicializado com sucesso!");
+
+  // ✅ NOVO: Configurar persistência de autenticação
+  // Isso mantém o usuário logado mesmo após fechar o app
+  await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+  print("✅ Persistência de login configurada: LOCAL");
 
   runApp(const BluFlixApp());
 }

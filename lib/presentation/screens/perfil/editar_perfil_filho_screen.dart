@@ -29,14 +29,14 @@ class _EditarPerfilFilhoScreenState extends State<EditarPerfilFilhoScreen> {
 
   // Lista de interesses disponíveis
   final Map<String, Map<String, dynamic>> _todosInteresses = {
-    'Ação': {'emoji': '💥', 'cor': Colors.red},
-    'Comédia': {'emoji': '😂', 'cor': Colors.orange},
-    'Drama': {'emoji': '🎭', 'cor': Colors.purple},
-    'Terror': {'emoji': '👻', 'cor': Colors.grey},
-    'Ficção Científica': {'emoji': '🚀', 'cor': Colors.blue},
-    'Romance': {'emoji': '💕', 'cor': Colors.pink},
-    'Animação': {'emoji': '🎨', 'cor': Colors.green},
-    'Documentário': {'emoji': '📚', 'cor': Colors.brown},
+    'Relaxamento': {'emoji': '😴', 'cor': Colors.blue},
+    'Animação': {'emoji': '🎨', 'cor': Colors.purple},
+    'Música': {'emoji': '🎵', 'cor': Colors.pink},
+    'Natureza': {'emoji': '🌿', 'cor': Colors.green},
+    'Ciências': {'emoji': '🔬', 'cor': Colors.cyan},
+    'Arte': {'emoji': '🖌️', 'cor': Colors.orange},
+    'Histórias': {'emoji': '📖', 'cor': Colors.brown},
+    'Jogos': {'emoji': '🎮', 'cor': Colors.red},
   };
 
   @override

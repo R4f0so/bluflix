@@ -16,7 +16,8 @@ class GerenciamentoAdminScreen extends StatefulWidget {
       _GerenciamentoAdminScreenState();
 }
 
-class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
+class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen>
+    with WidgetsBindingObserver {
   bool _isLoading = true;
   String _adminNome = 'Admin';
   String _adminAvatar = 'assets/avatar1.png';
@@ -26,8 +27,24 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     AdminGuard.checkAdminAccess(context);
     _carregarDadosAdmin();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // ✅ NOVO: Detecta quando o app volta ao primeiro plano
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      print('🔄 App voltou ao primeiro plano - recarregando dados admin');
+      _carregarDadosAdmin();
+    }
   }
 
   Future<void> _carregarDadosAdmin() async {
@@ -195,9 +212,11 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                   icon: Icons.account_circle_outlined,
                   label: 'Mudar Avatar',
                   isDarkMode: appTema.isDarkMode,
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(context);
-                    context.push('/mudar-avatar');
+                    await context.push('/mudar-avatar');
+                    // ✅ Recarregar dados ao retornar
+                    if (mounted) _carregarDadosAdmin();
                   },
                 ),
 
@@ -206,9 +225,11 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                   icon: Icons.people_outline,
                   label: 'Mudar Perfil',
                   isDarkMode: appTema.isDarkMode,
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(context);
-                    context.push('/mudar-perfil');
+                    await context.push('/mudar-perfil');
+                    // ✅ Recarregar dados ao retornar
+                    if (mounted) _carregarDadosAdmin();
                   },
                 ),
 
@@ -217,9 +238,11 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                   icon: Icons.person_add_outlined,
                   label: 'Adicionar Familiar',
                   isDarkMode: appTema.isDarkMode,
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(context);
-                    context.push('/adicionar-perfis');
+                    await context.push('/adicionar-perfis');
+                    // ✅ Recarregar dados ao retornar
+                    if (mounted) _carregarDadosAdmin();
                   },
                 ),
 
@@ -228,9 +251,11 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                   icon: Icons.settings_outlined,
                   label: 'Configurações',
                   isDarkMode: appTema.isDarkMode,
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(context);
-                    context.push('/perfil-configs');
+                    await context.push('/perfil-configs');
+                    // ✅ Recarregar dados ao retornar
+                    if (mounted) _carregarDadosAdmin();
                   },
                 ),
 
@@ -254,9 +279,11 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                   label: 'Gerenciar Vídeos',
                   isDarkMode: appTema.isDarkMode,
                   iconColor: Colors.orange,
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(context);
-                    context.push('/admin/gerenciar-videos');
+                    await context.push('/admin/gerenciar-videos');
+                    // ✅ Recarregar dados ao retornar
+                    if (mounted) _carregarDadosAdmin();
                   },
                 ),
 
@@ -352,6 +379,20 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                 child: Row(
                   children: [
                     const Spacer(),
+                    // ✅ NOVO: Botão de atualizar manualmente
+                    IconButton(
+                      icon: Icon(
+                        Icons.refresh,
+                        color: appTema.textColor,
+                        size: 24,
+                      ),
+                      onPressed: () {
+                        print('🔄 Atualizando dados manualmente');
+                        _carregarDadosAdmin();
+                      },
+                      tooltip: 'Atualizar dados',
+                    ),
+                    const SizedBox(width: 8),
                     const ThemeToggleButton(),
                     const SizedBox(width: 8),
                     GestureDetector(
@@ -494,28 +535,51 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen> {
                         label: 'Gerenciar\nVídeos',
                         color: Colors.orange,
                         appTema: appTema,
-                        onTap: () => context.push('/admin/gerenciar-videos'),
+                        onTap: () async {
+                          await context.push('/admin/gerenciar-videos');
+                          if (mounted) _carregarDadosAdmin();
+                        },
                       ),
                       _buildActionCard(
                         icon: Icons.add_circle_outline,
                         label: 'Adicionar\nVídeo',
                         color: Colors.purple,
                         appTema: appTema,
-                        onTap: () => context.push('/admin/adicionar-video'),
+                        onTap: () async {
+                          await context.push('/admin/adicionar-video');
+                          if (mounted) _carregarDadosAdmin();
+                        },
+                      ),
+                      // ✅ NOVO: Botão Gerenciar Perfis Filhos
+                      _buildActionCard(
+                        icon: Icons.family_restroom,
+                        label: 'Gerenciar\nPerfis Filhos',
+                        color: Colors.green,
+                        appTema: appTema,
+                        onTap: () async {
+                          await context.push('/gerenciamento-pais');
+                          if (mounted) _carregarDadosAdmin();
+                        },
                       ),
                       _buildActionCard(
                         icon: Icons.play_circle_outline,
                         label: 'Ver Catálogo\n(como usuário)',
                         color: Colors.blue,
                         appTema: appTema,
-                        onTap: () => context.push('/catalogo'),
+                        onTap: () async {
+                          await context.push('/catalogo');
+                          if (mounted) _carregarDadosAdmin();
+                        },
                       ),
                       _buildActionCard(
                         icon: Icons.settings,
                         label: 'Configurações\ndo Sistema',
                         color: Colors.grey,
                         appTema: appTema,
-                        onTap: () => context.push('/perfil-configs'),
+                        onTap: () async {
+                          await context.push('/perfil-configs');
+                          if (mounted) _carregarDadosAdmin();
+                        },
                       ),
                     ],
                   ),

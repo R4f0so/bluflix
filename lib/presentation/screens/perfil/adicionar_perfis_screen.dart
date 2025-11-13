@@ -83,29 +83,40 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
 
                 const Divider(height: 1),
 
+                // ✅ ATUALIZADO: Navega para editar perfil
                 ListTile(
-                  leading: Icon(
-                    Icons.edit_outlined,
-                    color: appTema.textSecondaryColor,
-                  ),
+                  leading: Icon(Icons.edit_outlined, color: appTema.textColor),
                   title: Text(
                     'Editar Perfil',
-                    style: TextStyle(color: appTema.textSecondaryColor),
+                    style: TextStyle(color: appTema.textColor),
                   ),
-                  subtitle: Text(
-                    'Em desenvolvimento',
-                    style: TextStyle(
-                      color: appTema.textSecondaryColor.withValues(alpha: 0.6),
-                      fontSize: 12,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(modalContext); // ✅ modalContext
-                    if (mounted) {
-                      // ✅ Verifica se ainda está montado
+                  onTap: () async {
+                    Navigator.pop(modalContext); // ✅ Fecha o modal
+
+                    if (!mounted) return;
+
+                    // Verificar PIN antes de editar
+                    final pinVerificado = await VerificarPinDialog.verificar(
+                      context,
+                    );
+                    if (!pinVerificado || !mounted) return;
+
+                    // Navegar para tela de edição
+                    final resultado = await context.push(
+                      '/editar-perfil-filho',
+                      extra: {'perfilIndex': index, 'perfilAtual': perfil},
+                    );
+
+                    // Se editou com sucesso, recarregar lista
+                    if (resultado == true && mounted) {
+                      await _carregarPerfis();
+
+                      if (!mounted) return;
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Função em desenvolvimento...'),
+                          content: Text('Perfil atualizado com sucesso!'),
+                          backgroundColor: Colors.green,
                           duration: Duration(seconds: 2),
                         ),
                       );

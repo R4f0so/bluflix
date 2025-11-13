@@ -241,7 +241,7 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                                       crossAxisCount: 2,
                                       crossAxisSpacing: 16,
                                       mainAxisSpacing: 16,
-                                      childAspectRatio: 0.85,
+                                      childAspectRatio: 0.75,
                                     ),
                                 itemCount: _perfisFilhos.length + 1,
                                 itemBuilder: (context, index) {
@@ -259,6 +259,40 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
                               ),
                       ),
                     ),
+
+                    // Botão Adicionar Familiar
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            await context.push('/adicionar-perfis');
+                            if (!mounted) return;
+                            _carregarPerfisFilhos();
+                          },
+                          icon: const Icon(Icons.person_add, size: 24),
+                          label: const Text(
+                            'Adicionar Familiar',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 4,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
 
                     // Botão Ver Catálogo
                     Padding(
@@ -378,62 +412,78 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
             width: 1.5,
           ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircleAvatar(radius: 40, backgroundImage: AssetImage(avatar)),
-            const SizedBox(height: 12),
-            Text(
-              apelido,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: appTema.textColor,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => _mostrarOpcoesEdicao(perfil, index),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFA9DBF4),
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 8,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(radius: 35, backgroundImage: AssetImage(avatar)),
+              const SizedBox(height: 8),
+              Flexible(
+                child: Text(
+                  apelido,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: appTema.textColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              child: const Text(
-                'Editar',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 8),
-            ElevatedButton.icon(
-              onPressed: () {
-                context.push('/analytics/$apelido');
-              },
-              icon: const Icon(Icons.analytics, size: 18),
-              label: const Text(
-                'Analytics',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => _mostrarOpcoesEdicao(perfil, index),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFA9DBF4),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    minimumSize: const Size(0, 36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: const Text(
+                    'Editar',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 6),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    context.push('/analytics/$apelido');
+                  },
+                  icon: const Icon(Icons.analytics, size: 16),
+                  label: const Text(
+                    'Analytics',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    minimumSize: const Size(0, 36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
