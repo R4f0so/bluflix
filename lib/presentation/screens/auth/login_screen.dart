@@ -252,7 +252,36 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             validator: _validarSenha,
                           ),
-                          const SizedBox(height: 30),
+                          const SizedBox(height: 8),
+
+                          // ✅ NOVO: Link "Esqueci minha senha"
+                          SizedBox(
+                            width: 300,
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: _isLoading
+                                    ? null
+                                    : () => context.go('/esqueci-senha'),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                    horizontal: 4,
+                                  ),
+                                ),
+                                child: Text(
+                                  'Esqueci minha senha',
+                                  style: TextStyle(
+                                    color: appTema.textColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
 
                           SizedBox(
                             width: 200,

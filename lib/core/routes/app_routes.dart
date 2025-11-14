@@ -3,6 +3,7 @@ import 'package:bluflix/presentation/screens/auth/splash_screen.dart';
 import 'package:bluflix/presentation/screens/auth/options_screen.dart';
 import 'package:bluflix/presentation/screens/auth/login_screen.dart';
 import 'package:bluflix/presentation/screens/auth/cadastro_screen.dart';
+import 'package:bluflix/presentation/screens/auth/esqueci_senha_screen.dart';
 import 'package:bluflix/presentation/screens/onboarding/avatar_screen.dart';
 import 'package:bluflix/presentation/screens/onboarding/apelido_screen.dart';
 import 'package:bluflix/presentation/screens/onboarding/criapin_screen.dart';
@@ -55,6 +56,11 @@ class AppRoutes {
         path: '/cadastro',
         name: 'cadastro',
         builder: (context, state) => const CadastroScreen(),
+      ),
+      GoRoute(
+        path: '/esqueci-senha',
+        name: 'esqueci-senha',
+        builder: (context, state) => const EsqueciSenhaScreen(),
       ),
 
       // ═══════════════════════════════════════════════════════════════
@@ -224,14 +230,14 @@ class AppRoutes {
       ),
 
       // ═══════════════════════════════════════════════════════════════
-      // ROTAS
+      // ANALYTICS
       // ═══════════════════════════════════════════════════════════════
       GoRoute(
         path: '/analytics/:perfilFilhoApelido',
         name: 'perfil-filho-analytics',
         builder: (context, state) {
-        final perfilFilhoApelido = state.pathParameters['perfilFilhoApelido']!;
-        return PerfilFilhoAnalyticsScreen(perfilFilhoApelido: perfilFilhoApelido);
+          final perfilFilhoApelido = state.pathParameters['perfilFilhoApelido']!;
+          return PerfilFilhoAnalyticsScreen(perfilFilhoApelido: perfilFilhoApelido);
         },
       ),
     ],
