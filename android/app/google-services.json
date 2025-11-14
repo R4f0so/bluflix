@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "846678971915-22p63ds0ts6h644g19oh36pk27q4r19b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.bluflix",
+            "certificate_hash": "957595f02c668e748a75a59a9039385f4cd9d350"
+          }
+        },
+        {
           "client_id": "846678971915-sqv8mvt8ii3iau97ifj76t7gh05rtn0r.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -29,6 +37,13 @@
             {
               "client_id": "846678971915-sqv8mvt8ii3iau97ifj76t7gh05rtn0r.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "846678971915-em7sm5na57d66eraapke1g9vt2odpmq9.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.bluflix"
+              }
             }
           ]
         }
