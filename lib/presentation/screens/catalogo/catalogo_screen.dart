@@ -64,7 +64,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             if (perfilProvider.isPerfilPai) {
               // ✅ ATUALIZADO: Gêneros educacionais para o BluFlix
               _generosVisiveis = [
-                'Educação',
+                'Relaxamento',
                 'Animação',
                 'Música',
                 'Natureza',
