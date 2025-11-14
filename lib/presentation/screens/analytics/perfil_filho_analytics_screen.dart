@@ -205,7 +205,7 @@ class _PerfilFilhoAnalyticsScreenState
                     // ═══════════════════════════════════════════════
                     // GÊNEROS MAIS ASSISTIDOS
                     // ═══════════════════════════════════════════════
-                    _buildSecaoTitulo('📊 Gêneros Favoritos', appTema),
+                    _buildSecaoTitulo('📊 Gêneros Assistidos', appTema),
                     const SizedBox(height: 16),
                     _buildGenerosList(appTema),
 
@@ -214,7 +214,7 @@ class _PerfilFilhoAnalyticsScreenState
                     // ═══════════════════════════════════════════════
                     // VÍDEOS MAIS ASSISTIDOS
                     // ═══════════════════════════════════════════════
-                    _buildSecaoTitulo('🎬 Vídeos Favoritos', appTema),
+                    _buildSecaoTitulo('🎬 Vídeos Assistidos', appTema),
                     const SizedBox(height: 16),
                     _buildVideosList(appTema),
 
