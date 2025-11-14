@@ -25,9 +25,8 @@ class _AdminAddVideoScreenState extends State<AdminAddVideoScreen> {
   final List<String> _todosGeneros = [
     'Relaxamento',
     'Animação',
-    'Drama',
     'Música',
-    'Natureza Científica',
+    'Natureza',
     'Ciências',
     'Arte',
     'Histórias',
