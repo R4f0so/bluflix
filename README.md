@@ -952,6 +952,6 @@ class VideoServiceException implements Exception {
 
 ---
 
-**Última atualização**: Novembro 2024  
+**Última atualização**: Novembro 2025 
 **Versão**: 1.0  
 **Projeto ID**: bluflix-tg
