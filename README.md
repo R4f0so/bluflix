@@ -1,748 +1,957 @@
-<div align="center">
-
-# 🎬 BluFlix
-
-### Plataforma de Streaming Educacional Acessível para Crianças com TEA
-
-[![Flutter](https://img.shields.io/badge/Flutter-3.0+-02569B?logo=flutter)](https://flutter.dev)
-[![Firebase](https://img.shields.io/badge/Firebase-Latest-FFCA28?logo=firebase)](https://firebase.google.com)
-[![License](https://img.shields.io/badge/License-Academic-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-MVP-green.svg)]()
-
-</div>
-
----
-
-BluFlix é um **MVP de aplicativo de streaming** desenvolvido para oferecer uma experiência acessível a pessoas do espectro autista de nível 1. O sistema disponibiliza vídeos curtos em um catálogo interativo, com interface clara e previsível, visando conforto sensorial, facilidade de navegação e controle do usuário sobre a experiência de reprodução.
-
-Como se trata de um MVP, algumas funcionalidades ainda estão em desenvolvimento e o app não está pronto para uso em produção.
-
----
+# BluFlix 
 
 ## 📋 Sumário
 
-- [Sobre o Projeto](#sobre-o-projeto)
-- [Perfis de Usuário](#perfis-de-usuário)
-- [Funcionalidades](#funcionalidades)
-- [Arquitetura e Tecnologias](#arquitetura-e-tecnologias)
-- [Instalação e Execução](#instalação-e-execução)
-- [Estrutura de Pastas](#estrutura-de-pastas)
-- [Principais Endpoints](#principais-endpoints)
-- [Modelos de Dados](#modelos-de-dados)
-- [Upload de Vídeos](#upload-de-vídeos)
-- [Segurança](#segurança)
-- [Termos de Uso e Privacidade](#termos-de-uso-e-privacidade)
-- [Contribuição](#contribuição)
-- [Licença](#licença)
-- [Autores](#autores)
-- [Referências](#referências)
-- [Screenshots](#screenshots)
-- [Observações Finais](#observações-finais)
+1. [Visão Geral do Projeto](#visão-geral-do-projeto)
+2. [Arquitetura do Sistema](#arquitetura-do-sistema)
+3. [Estrutura do Projeto](#estrutura-do-projeto)
+4. [Modelos de Dados](#modelos-de-dados)
+5. [Serviços Principais](#serviços-principais)
+6. [Rotas e Navegação](#rotas-e-navegação)
+7. [Gerenciamento de Estado](#gerenciamento-de-estado)
+8. [Firebase e Firestore](#firebase-e-firestore)
+9. [Segurança](#segurança)
+10. [Analytics e Monitoramento](#analytics-e-monitoramento)
 
 ---
 
-## 📖 Sobre o Projeto
+## 1. Visão Geral do Projeto
 
-O **BluFlix** foi desenvolvido como **Trabalho de Conclusão de Curso (TCC)** para a FATEC Carapicuíba, com o objetivo de criar uma **plataforma MVP** de streaming acessível para pessoas do espectro autista de nível 1 de suporte, disponibilizando vídeos curtos em um catálogo organizado, proporcionando uma experiência de consumo de conteúdo clara, previsível e confortável, respeitando as necessidades sensoriais e de navegação desse público.
+### 1.1 Sobre o BluFlix
 
-Como se trata de um MVP, o sistema ainda está em fase de desenvolvimento, e algumas funcionalidades podem estar incompletas ou em teste.
+O **BluFlix** é um aplicativo MVP de streaming educacional desenvolvido como TCC para a FATEC Carapicuíba, voltado para crianças com TEA nível 1 de suporte.
 
-### 🎯 Objetivos Principais
+### 1.2 Tecnologias Utilizadas
 
-- ✨ Proporcionar experiência de consumo de conteúdo educativo clara e previsível
-- 🧩 Respeitar necessidades sensoriais específicas do público-alvo
-- 👨‍👩‍👧 Oferecer controle parental robusto e seguro
-- 🔒 Criar ambiente personalizado para cada perfil infantil
-- 🎨 Facilitar navegação através de interface minimalista
+#### Frontend
+- **Flutter**: ^3.9.2
+- **Dart**: SDK
+- **go_router**: ^17.0.0 (navegação)
+- **provider**: ^6.1.2 (gerenciamento de estado)
+- **youtube_player_flutter**: ^9.0.3
 
----
+#### Backend
+- **firebase_core**: ^4.1.1
+- **firebase_auth**: ^6.1.0
+- **cloud_firestore**: ^6.0.2
 
-## 👥 Perfis de Usuário
+#### Segurança
+- **crypto**: ^3.0.6 (SHA-256 para PINs)
+- **flutter_secure_storage**: ^9.2.4
 
-- **Usuário (Criança)**: Pessoa do espectro autista nível 1 que acessa o catálogo de vídeos curtos, reproduz conteúdos e interage com a interface minimalista através de um perfil personalizado protegido por PIN.
-
-- **Responsável (Pai/Mãe)**: Usuário adulto que gerencia até 4 perfis infantis, configura preferências, monitora o uso e controla o acesso através de autenticação por email/senha.
-
-- **Administrador/Gerente do App**: Usuário responsável por adicionar ou atualizar vídeos no catálogo, gerenciar funcionalidades do aplicativo e visualizar estatísticas de uso.
-
----
-
-## ✨ Funcionalidades
-
-### Implementadas ✅
-
-#### 🔐 Sistema de Autenticação Dual
-- **Pais/Responsáveis**: Login via email e senha (Firebase Authentication)
-- **Crianças**: Autenticação por PIN de 4 dígitos com hash SHA-256
-- Recuperação de senha por email
-- Persistência de sessão automática
-
-#### 👤 Sistema Multi-Perfil
-- **Até 4 perfis infantis** por conta de responsável
-- Personalização completa: nome, avatar, idade
-- Seleção de gêneros favoritos educacionais
-- **Isolamento completo de dados** entre perfis
-- Favoritos e histórico individualizados por perfil
-
-#### 🎥 Catálogo de Vídeos
-- Navegação por catálogo de vídeos curtos em grid responsivo
-- Reprodução ao clicar no cartaz de um vídeo
-- Integração com **YouTube Player** para reprodução
-- Filtragem por gênero educacional:
-  - 📚 Educação
-  - 🎨 Animação
-  - 🎵 Música
-  - 🌿 Natureza
-  - 🎭 Arte
-  - 🔬 Ciência
-  - ⚽ Esportes
-  - 📖 Histórias
-- Reprodução em tela cheia
-- Analytics automático de visualizações
-
-#### ❤️ Sistema de Favoritos
-- Adicionar/remover vídeos favoritos com um toque
-- Lista de favoritos personalizada por perfil infantil
-- Sincronização em tempo real com Firestore
-- Isolamento: favoritos independentes entre perfis
-
-#### 🌓 Interface e Temas
-- Alternância suave entre modo claro e escuro
-- Interface minimalista e previsível
-- Cores otimizadas para conforto visual
-- Botões grandes e espaçados (acessibilidade TEA)
-- Animações suaves e não agressivas
-- Feedback tátil em interações
-
-#### 🛡️ Painel Administrativo
-- Adicionar novos vídeos (URL do YouTube + metadados)
-- Editar informações de vídeos existentes
-- Soft delete (desativar vídeos sem perder dados)
-- Visualizar estatísticas de engajamento
-- Controle de acesso via flag `isAdmin`
-
-### Em Desenvolvimento 🚧
-
-- Sistema de busca por título e tags
-- Histórico completo de visualização
-- Recomendações personalizadas baseadas em preferências
-- Modo offline (download de vídeos)
-- Notificações de novos conteúdos
-- Controle parental avançado (tempo de tela, horários)
-- Relatórios detalhados para responsáveis
+#### Utilidades
+- **shared_preferences**: ^2.2.2
+- **audioplayers**: ^6.5.1
 
 ---
 
-## 🛠️ Arquitetura e Tecnologias
+## 2. Arquitetura do Sistema
 
-### Frontend
-- **Flutter 3.x** - Framework multiplataforma (Dart)
-- **Material Design 3** - Design system e componentes UI
-- **Provider** - Gerenciamento de estado
-
-### Backend
-- **Firebase Authentication** - Autenticação de usuários
-- **Cloud Firestore** - Banco de dados NoSQL em tempo real
-- **Firebase Storage** - (Opcional) Armazenamento de mídia
-
-### Bibliotecas e Pacotes Principais
-
-```yaml
-dependencies:
-  # Firebase
-  firebase_core: ^2.24.0
-  firebase_auth: ^4.15.0
-  cloud_firestore: ^4.13.0
-  
-  # Reprodução de Vídeo
-  youtube_player_flutter: ^8.1.2
-  
-  # UI e UX
-  provider: ^6.1.1
-  cached_network_image: ^3.3.0
-  
-  # Segurança
-  crypto: ^3.0.3  # Para hash SHA-256 de PINs
-  
-  # Utilidades
-  intl: ^0.18.1
-  shared_preferences: ^2.2.2
-```
-
-### Arquitetura em Camadas
+### 2.1 Estrutura de Pastas Real
 
 ```
-┌─────────────────────────────────────────────┐
-│         CAMADA DE APRESENTAÇÃO              │
-│   (Screens, Widgets, UI Components)         │
-└─────────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────────┐
-│          CAMADA DE NEGÓCIO                  │
-│   (Services, Business Logic, Validators)    │
-└─────────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────────┐
-│           CAMADA DE DADOS                   │
-│   (Firebase, Firestore, Authentication)     │
-└─────────────────────────────────────────────┘
+bluflix/
+├── lib/
+│   ├── main.dart                           # Ponto de entrada
+│   ├── firebase_options.dart               # Configuração Firebase
+│   │
+│   ├── core/                               # Núcleo do app
+│   │   ├── routes/
+│   │   │   └── app_routes.dart            # Rotas do GoRouter
+│   │   └── theme/
+│   │       └── app_theme.dart             # Gerenciamento de temas
+│   │
+│   ├── data/                               # Camada de dados
+│   │   ├── models/
+│   │   │   ├── video_model_youtube.dart
+│   │   │   └── video_visualizacao_model.dart
+│   │   └── services/
+│   │       ├── pin_service.dart
+│   │       ├── video_service_youtube.dart
+│   │       ├── analytics_service.dart
+│   │       └── admin_guard.dart
+│   │
+│   └── presentation/                       # Camada de apresentação
+│       ├── providers/
+│       │   └── perfil_provider.dart
+│       └── screens/
+│           ├── auth/
+│           │   ├── splash_screen.dart
+│           │   ├── options_screen.dart
+│           │   ├── login_screen.dart
+│           │   ├── cadastro_screen.dart
+│           │   └── esqueci_senha_screen.dart
+│           ├── onboarding/
+│           │   ├── avatar_screen.dart
+│           │   ├── apelido_screen.dart
+│           │   ├── criapin_screen.dart
+│           │   ├── avatar_filho_screen.dart
+│           │   ├── apelido_filho_screen.dart
+│           │   └── preferencias_filho_screen.dart
+│           ├── catalogo/
+│           │   ├── catalogo_screen.dart
+│           │   ├── lista_videos_screen_youtube.dart
+│           │   ├── video_player_youtube_screen.dart
+│           │   └── favoritos_screen.dart
+│           ├── perfil/
+│           │   ├── adicionar_perfis_screen.dart
+│           │   ├── mudar_perfil_screen.dart
+│           │   ├── gerenciamento_pais_screen.dart
+│           │   ├── mudar_avatar_screen.dart
+│           │   └── editar_perfil_filho_screen.dart
+│           ├── configuracoes/
+│           │   ├── perfil_configs_screen.dart
+│           │   ├── perfilpai_configs_screen.dart
+│           │   ├── seguranca_config_screen.dart
+│           │   └── tema_config_screen.dart
+│           ├── admin/
+│           │   ├── gerenciamento_admin_screen.dart
+│           │   ├── admin_gerenciar_videos_screen.dart
+│           │   ├── admin_add_video_screen.dart
+│           │   └── admin_listar_videos_screen.dart
+│           └── analytics/
+│               └── perfil_filho_analytics_screen.dart
+│
+├── assets/
+│   ├── logo.png
+│   ├── logo_1024.png
+│   ├── morning_background.png
+│   ├── night_background.png
+│   ├── google.png
+│   ├── facebook.png
+│   └── avatar1.png até avatar8.png
+│
+├── firestore.rules                         # Regras de segurança
+├── firebase.json                           # Configuração Firebase
+└── pubspec.yaml                            # Dependências
 ```
 
 ---
 
-## 📥 Instalação e Execução
+## 3. Modelos de Dados
 
-### Pré-requisitos
+### 3.1 VideoModelYoutube
 
-- [Flutter SDK](https://flutter.dev/docs/get-started/install) 3.0 ou superior
-- [Firebase CLI](https://firebase.google.com/docs/cli) (opcional, mas recomendado)
-- Android Studio ou Xcode (para desenvolvimento mobile)
-- Conta no [Firebase Console](https://console.firebase.google.com/)
-- Git
+```dart
+class VideoModelYoutube {
+  final String id;
+  final String titulo;
+  final String descricao;
+  final String youtubeId;         // Ex: "dQw4w9WgXcQ"
+  final String youtubeUrl;        // URL completa do YouTube
+  final List<String> generos;
+  final DateTime dataUpload;
+  final bool ativo;
 
-### Passo a Passo
+  VideoModelYoutube({
+    required this.id,
+    required this.titulo,
+    required this.descricao,
+    required this.youtubeId,
+    required this.youtubeUrl,
+    required this.generos,
+    required this.dataUpload,
+    this.ativo = true,
+  });
 
-#### 1️⃣ Clone o Repositório
+  // ═══════════════════════════════════════════════════════════════
+  // MÉTODOS
+  // ═══════════════════════════════════════════════════════════════
 
-```bash
-git clone https://github.com/R4f0so/bluflix.git
-cd bluflix
+  /// Converte de Firestore DocumentSnapshot
+  factory VideoModelYoutube.fromFirestore(DocumentSnapshot doc);
+
+  /// Converte para Map (para salvar no Firestore)
+  Map<String, dynamic> toMap();
+
+  /// URL da thumbnail do YouTube
+  String get thumbnailUrl =>
+      'https://img.youtube.com/vi/$youtubeId/hqdefault.jpg';
+
+  /// Extrai ID do YouTube de uma URL
+  static String? extractYoutubeId(String url);
+
+  /// Copia o modelo com alterações
+  VideoModelYoutube copyWith({...});
+}
 ```
 
-#### 2️⃣ Instale as Dependências
+**Firestore**: Collection `videos_youtube/{id}`
 
-```bash
-flutter pub get
+**Campos no Firestore:**
+```json
+{
+  "titulo": "string",
+  "descricao": "string",
+  "youtubeId": "string",
+  "youtubeUrl": "string",
+  "generos": ["array"],
+  "dataUpload": "timestamp",
+  "ativo": "boolean"
+}
 ```
 
-#### 3️⃣ Configure o Firebase
+### 3.2 VideoVisualizacao (Analytics)
 
-**Opção A: FlutterFire CLI (Recomendado)**
+```dart
+class VideoVisualizacao {
+  final String id;
+  final String videoId;
+  final String videoTitulo;
+  final String videoThumbnail;
+  final String genero;
+  final String perfilFilhoApelido;
+  final DateTime inicioVisualizacao;
+  final DateTime? fimVisualizacao;
+  final int duracaoAssistidaSegundos;
+  final int duracaoTotalSegundos;
+  final double percentualAssistido;
+  final bool concluido;
+  final int vezesReassistido;
 
-```bash
-# Instalar FlutterFire CLI globalmente
-dart pub global activate flutterfire_cli
+  VideoVisualizacao({...});
 
-# Configurar Firebase automaticamente
-flutterfire configure
+  Map<String, dynamic> toMap();
+  factory VideoVisualizacao.fromMap(String id, Map<String, dynamic> map);
+}
 ```
 
-**Opção B: Configuração Manual**
+**Firestore**: `users/{userId}/perfis/{perfilApelido}/analytics/{id}`
 
-**Para Android:**
-1. Crie um projeto no [Firebase Console](https://console.firebase.google.com/)
-2. Adicione um aplicativo Android
-3. Baixe o arquivo `google-services.json`
-4. Coloque em `android/app/google-services.json`
+### 3.3 SessaoApp (Tempo de Uso)
 
-**Para iOS:**
-1. No Firebase Console, adicione um aplicativo iOS
-2. Baixe o arquivo `GoogleService-Info.plist`
-3. Coloque em `ios/Runner/GoogleService-Info.plist`
+```dart
+class SessaoApp {
+  final String id;
+  final String perfilFilhoApelido;
+  final DateTime inicioSessao;
+  final DateTime? fimSessao;
+  final int duracaoSegundos;
 
-#### 4️⃣ Configure as Regras do Firestore
+  SessaoApp({...});
 
-No Firebase Console, vá em **Firestore Database → Rules** e cole:
+  Map<String, dynamic> toMap();
+  factory SessaoApp.fromMap(String id, Map<String, dynamic> map);
+}
+```
+
+**Firestore**: `users/{userId}/perfis/{perfilApelido}/sessoes/{id}`
+
+---
+
+## 4. Serviços Principais
+
+### 4.1 VideoServiceYoutube
+
+Gerencia todas as operações com vídeos do YouTube no Firestore.
+
+```dart
+class VideoServiceYoutube {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // ═══════════════════════════════════════════════════════════════
+  // BUSCAR VÍDEOS
+  // ═══════════════════════════════════════════════════════════════
+
+  /// Busca todos os vídeos ativos
+  Future<List<VideoModelYoutube>> buscarTodosVideos() async {...}
+
+  /// Busca vídeos por gênero específico
+  Future<List<VideoModelYoutube>> buscarVideosPorGenero(String genero) async {...}
+
+  /// Busca vídeos por múltiplos gêneros
+  Future<List<VideoModelYoutube>> buscarVideosPorGeneros(
+    List<String> generos,
+  ) async {...}
+
+  /// Busca um vídeo específico por ID
+  Future<VideoModelYoutube?> buscarVideoPorId(String videoId) async {...}
+
+  // ═══════════════════════════════════════════════════════════════
+  // ADMIN - GERENCIAR VÍDEOS
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<String?> adicionarVideo({
+    required String titulo,
+    required String descricao,
+    required String youtubeUrl,
+    required List<String> generos,
+  }) async {...}
+
+  Future<bool> atualizarVideo({
+    required String videoId,
+    String? titulo,
+    String? descricao,
+    String? youtubeUrl,
+    List<String>? generos,
+    bool? ativo,
+  }) async {...}
+
+  Future<bool> excluirVideo(String videoId) async {...}
+
+  Future<bool> desativarVideo(String videoId) async {...}
+
+  // ═══════════════════════════════════════════════════════════════
+  // ANALYTICS
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<void> registrarVisualizacao(String videoId, String userId) async {...}
+
+  Future<int> buscarTotalVisualizacoes(String videoId) async {...}
+}
+```
+
+### 4.2 PinService
+
+Gerenciamento seguro de PINs com hash SHA-256.
+
+```dart
+class PinService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // ═══════════════════════════════════════════════════════════════
+  // HASH SHA-256
+  // ═══════════════════════════════════════════════════════════════
+
+  /// Gera hash SHA-256 do PIN
+  /// Exemplo: "1234" → "03ac674216f3e15c761ee1a5e255f067..."
+  String _hashPin(String pin) {
+    final bytes = utf8.encode(pin);
+    final hash = sha256.convert(bytes);
+    return hash.toString();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // GERENCIAR PIN
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<bool> criarPinPerfilPai(String pin) async {...}
+
+  Future<bool> verificarPinPerfilPai(String pin) async {...}
+
+  Future<bool> alterarPinPerfilPai(String pinAntigo, String pinNovo) async {...}
+
+  Future<bool> removerPinPerfilPai(String pin) async {...}
+
+  Future<bool> temPinConfigurado() async {...}
+
+  // ═══════════════════════════════════════════════════════════════
+  // VALIDAÇÃO
+  // ═══════════════════════════════════════════════════════════════
+
+  /// Valida se o PIN é válido:
+  /// - 4 dígitos
+  /// - Apenas números
+  bool _validarPin(String pin) {...}
+}
+```
+
+**Estrutura no Firestore:**
+```json
+{
+  "users/{userId}": {
+    "pinHash": "string (SHA-256)",
+    "pinCriadoEm": "timestamp",
+    "pinAlteradoEm": "timestamp"
+  }
+}
+```
+
+### 4.3 AnalyticsService
+
+Sistema completo de analytics e monitoramento.
+
+```dart
+class AnalyticsService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // ═══════════════════════════════════════════════════════════════
+  // HELPERS
+  // ═══════════════════════════════════════════════════════════════
+
+  CollectionReference _getAnalyticsRef(String userId, String perfilApelido) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('perfis')
+        .doc(perfilApelido)
+        .collection('analytics');
+  }
+
+  CollectionReference _getSessoesRef(String userId, String perfilApelido) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('perfis')
+        .doc(perfilApelido)
+        .collection('sessoes');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // VISUALIZAÇÕES
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<String?> iniciarVisualizacao({
+    required String videoId,
+    required String videoTitulo,
+    required String videoThumbnail,
+    required String genero,
+    required String perfilFilhoApelido,
+    required int duracaoTotalSegundos,
+  }) async {...}
+
+  Future<void> finalizarVisualizacao({
+    required String visualizacaoId,
+    required int duracaoAssistidaSegundos,
+    String? perfilFilhoApelido,
+  }) async {...}
+
+  // ═══════════════════════════════════════════════════════════════
+  // SESSÕES
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<String?> iniciarSessao(String perfilFilhoApelido) async {...}
+
+  Future<void> finalizarSessao(
+    String sessaoId,
+    String perfilFilhoApelido,
+  ) async {...}
+
+  // ═══════════════════════════════════════════════════════════════
+  // ESTATÍSTICAS
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<List<VideoVisualizacao>> buscarVisualizacoesPerfil(
+    String perfilFilhoApelido, {
+    int? limiteDias,
+  }) async {...}
+
+  Future<int> calcularTempoTotalTela(
+    String perfilFilhoApelido, {
+    int? limiteDias,
+  }) async {...}
+
+  Future<Map<String, int>> calcularGenerosMaisAssistidos(
+    String perfilFilhoApelido, {
+    int? limiteDias,
+  }) async {...}
+
+  Future<List<VideoVisualizacao>> buscarVideosMaisAssistidos(
+    String perfilFilhoApelido, {
+    int limite = 10,
+  }) async {...}
+
+  Future<double> calcularTaxaConclusao(
+    String perfilFilhoApelido, {
+    int? limiteDias,
+  }) async {...}
+
+  Future<int> calcularDuracaoMediaSessao(
+    String perfilFilhoApelido, {
+    int? limiteDias,
+  }) async {...}
+
+  Future<Map<String, int>> calcularFrequenciaPorDia(
+    String perfilFilhoApelido, {
+    int? limiteDias,
+  }) async {...}
+}
+```
+
+### 4.4 AdminGuard
+
+Proteção de rotas administrativas.
+
+```dart
+class AdminGuard {
+  /// Verifica se o usuário é admin
+  static Future<bool> isAdmin() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return false;
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    final tipoUsuario = userDoc.data()?['tipoUsuario'] ?? '';
+    return tipoUsuario == 'admin';
+  }
+
+  /// Verifica permissão e redireciona se não autorizado
+  static Future<void> checkAdminAccess(BuildContext context) async {...}
+
+  /// Widget que protege rotas
+  static Widget protectRoute({
+    required Widget child,
+    Widget? fallback,
+  }) {...}
+}
+```
+
+---
+
+## 5. Rotas e Navegação (GoRouter)
+
+### 5.1 Configuração
+
+```dart
+class AppRoutes {
+  static final GoRouter router = GoRouter(
+    initialLocation: '/splash',
+    routes: [...]
+  );
+}
+```
+
+### 5.2 Rotas Principais
+
+#### Autenticação
+- `/splash` - SplashScreen
+- `/options` - OptionsScreen
+- `/login` - LoginScreen
+- `/cadastro` - CadastroScreen
+- `/esqueci-senha` - EsqueciSenhaScreen
+
+#### Onboarding - Perfil Pai
+- `/avatar` - AvatarScreen
+- `/apelido` - ApelidoScreen (+ avatar)
+- `/criapin` - CriaPinScreen (+ apelido + avatar)
+
+#### Onboarding - Perfil Filho
+- `/avatar-filho` - AvatarFilhoScreen
+- `/apelido-filho` - ApelidoFilhoScreen (+ avatar)
+- `/preferencias-filho` - PreferenciasFilhoScreen (+ apelido + avatar)
+
+#### Gerenciamento de Perfis
+- `/gerenciamento-pais` - GerenciamentoPaisScreen
+- `/adicionar-perfis` - AdicionarPerfisScreen
+- `/mudar-perfil` - MudarPerfilScreen
+- `/mudar-avatar` - MudarAvatarScreen
+- `/editar-perfil-filho` - EditarPerfilFilhoScreen
+
+#### Configurações
+- `/perfil-configs` - PerfilConfigsScreen
+- `/perfilpai-configs` - PerfilPaiConfigsScreen
+- `/seguranca-config` - SegurancaConfigScreen
+- `/tema-config` - TemaConfigScreen
+
+#### Catálogo e Vídeos
+- `/catalogo` - CatalogoScreen
+- `/videos/:genero` - ListaVideosYoutubeScreen
+- `/player` - VideoPlayerYoutubeScreen (recebe VideoModelYoutube)
+- `/favoritos` - FavoritosScreen
+
+#### Admin
+- `/gerenciamento-admin` - GerenciamentoAdminScreen
+- `/admin/gerenciar-videos` - AdminGerenciarVideosScreen
+- `/admin/adicionar-video` - AdminAddVideoScreen
+- `/admin-videos` - AdminListarVideosScreen
+
+#### Analytics
+- `/analytics/:perfilFilhoApelido` - PerfilFilhoAnalyticsScreen
+
+---
+
+## 6. Gerenciamento de Estado
+
+### 6.1 AppTema (Provider)
+
+Gerencia tema claro/escuro com persistência em SharedPreferences e Firestore.
+
+```dart
+class AppTema extends ChangeNotifier {
+  bool _isDarkMode = false;
+
+  bool get isDarkMode => _isDarkMode;
+  String get backgroundImage => _isDarkMode
+      ? 'assets/night_background.png'
+      : 'assets/morning_background.png';
+  Color get textColor => _isDarkMode ? Colors.white : Colors.black;
+  Color get textSecondaryColor => _isDarkMode ? Colors.white70 : Colors.black54;
+  Color get backgroundColor => _isDarkMode ? Colors.black : Colors.white;
+  Color get corSecundaria => _isDarkMode
+      ? const Color(0xFF1E88E5)
+      : const Color(0xFF1976D2);
+
+  // Carregar do SharedPreferences
+  Future<void> loadTheme() async {...}
+
+  // Carregar do Firestore (após login)
+  Future<void> loadThemeFromFirestore() async {...}
+
+  // Alternar tema
+  Future<void> toggleTheme() async {...}
+
+  // Definir tema específico
+  Future<void> setDarkMode(bool value) async {...}
+
+  // Limpar tema
+  Future<void> clearTheme() async {...}
+}
+```
+
+### 6.2 PerfilProvider
+
+Gerencia perfil ativo com SharedPreferences.
+
+```dart
+class PerfilProvider extends ChangeNotifier {
+  String? _perfilAtivoApelido;
+  String? _perfilAtivoAvatar;
+  bool _isPerfilPai = true;
+
+  String? get perfilAtivoApelido => _perfilAtivoApelido;
+  String? get perfilAtivoAvatar => _perfilAtivoAvatar;
+  bool get isPerfilPai => _isPerfilPai;
+
+  // Carregar perfil salvo
+  Future<void> loadPerfilAtivo() async {...}
+
+  // Definir perfil ativo
+  Future<void> setPerfilAtivo({
+    required String apelido,
+    required String avatar,
+    required bool isPai,
+  }) async {...}
+
+  // Limpar perfil (usado no logout)
+  Future<void> clearPerfilAtivo() async {...}
+}
+```
+
+---
+
+## 7. Firebase e Firestore
+
+### 7.1 Inicialização (main.dart)
+
+```dart
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  runApp(const BluFlixApp());
+}
+```
+
+### 7.2 Estrutura do Firestore
+
+```
+firestore/
+├── users/
+│   └── {userId}/
+│       ├── email: string
+│       ├── nome: string
+│       ├── tipoUsuario: string ("admin" | "usuario")
+│       ├── temaDark: boolean
+│       ├── pinHash: string (SHA-256)
+│       ├── pinCriadoEm: timestamp
+│       ├── pinAlteradoEm: timestamp
+│       │
+│       └── perfis/                    # Subcoleção
+│           └── {perfilApelido}/
+│               ├── apelido: string
+│               ├── avatar: string
+│               ├── generosFavoritos: array
+│               │
+│               ├── analytics/          # Subcoleção
+│               │   └── {visualizacaoId}/
+│               │       ├── videoId: string
+│               │       ├── videoTitulo: string
+│               │       ├── genero: string
+│               │       ├── inicioVisualizacao: timestamp
+│               │       ├── duracaoAssistidaSegundos: number
+│               │       └── vezesReassistido: number
+│               │
+│               └── sessoes/            # Subcoleção
+│                   └── {sessaoId}/
+│                       ├── inicioSessao: timestamp
+│                       ├── fimSessao: timestamp
+│                       └── duracaoSegundos: number
+│
+├── perfis_filhos/
+│   └── {perfilId}/
+│       ├── userId: string (referência ao pai)
+│       ├── apelido: string
+│       ├── avatar: string
+│       ├── generosFavoritos: array
+│       └── criadoEm: timestamp
+│
+└── videos_youtube/
+    └── {videoId}/
+        ├── titulo: string
+        ├── descricao: string
+        ├── youtubeId: string
+        ├── youtubeUrl: string
+        ├── generos: array
+        ├── dataUpload: timestamp
+        ├── ativo: boolean
+        │
+        └── visualizacoes/              # Subcoleção
+            └── {visualizacaoId}/
+                ├── userId: string
+                └── timestamp: timestamp
+```
+
+### 7.3 Regras de Segurança (firestore.rules)
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Coleção de usuários (responsáveis)
+    // Funções auxiliares
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() 
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // Usuários
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isAuthenticated() && isOwner(userId);
     }
     
-    // Coleção de perfis infantis
-    match /child_profiles/{profileId} {
-      allow read: if request.auth != null && 
-                  resource.data.parentUid == request.auth.uid;
-      allow create: if request.auth != null && 
-                    request.resource.data.parentUid == request.auth.uid;
-      allow update, delete: if request.auth != null && 
-                            resource.data.parentUid == request.auth.uid;
+    // Perfis filhos
+    match /perfis_filhos/{perfilId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAuthenticated() 
+        && request.resource.data.userId == request.auth.uid;
     }
     
-    // Coleção de vídeos
+    // Vídeos (somente admin pode adicionar)
     match /videos/{videoId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
     }
   }
 }
 ```
 
-#### 5️⃣ Execute o Aplicativo
-
-```bash
-# Para Android
-flutter run
-
-# Para iOS
-flutter run -d ios
-
-# Para Web (opcional)
-flutter run -d chrome
-```
-
 ---
 
-## 📁 Estrutura de Pastas
+## 8. Segurança
 
-```
-bluflix/
-├── lib/
-│   ├── main.dart                    # Ponto de entrada da aplicação
-│   ├── screens/                     # Telas do aplicativo
-│   │   ├── auth/                    # Telas de autenticação
-│   │   │   ├── login_screen.dart
-│   │   │   └── register_screen.dart
-│   │   ├── home/                    # Tela principal
-│   │   │   ├── home_screen.dart
-│   │   │   ├── profile_selection_screen.dart
-│   │   │   └── video_player_screen.dart
-│   │   ├── profile/                 # Gerenciamento de perfis
-│   │   │   ├── profile_management_screen.dart
-│   │   │   └── create_child_profile_screen.dart
-│   │   ├── admin/                   # Painel administrativo
-│   │   │   └── admin_panel_screen.dart
-│   │   └── settings/                # Configurações
-│   │       └── settings_screen.dart
-│   ├── models/                      # Modelos de dados
-│   │   ├── user_model.dart
-│   │   ├── profile_model.dart
-│   │   ├── video_model.dart
-│   │   └── genre_model.dart
-│   ├── services/                    # Serviços de integração
-│   │   ├── auth_service.dart
-│   │   ├── firestore_service.dart
-│   │   └── video_service.dart
-│   ├── widgets/                     # Widgets reutilizáveis
-│   │   ├── video_card.dart
-│   │   ├── profile_avatar.dart
-│   │   └── custom_button.dart
-│   ├── utils/                       # Utilitários
-│   │   ├── constants.dart
-│   │   ├── validators.dart
-│   │   └── pin_hasher.dart
-│   └── theme/                       # Temas e estilos
-│       ├── app_theme.dart
-│       └── colors.dart
-├── assets/                          # Recursos estáticos
-│   ├── images/
-│   ├── icons/
-│   └── fonts/
-├── test/                            # Testes unitários
-├── integration_test/                # Testes de integração
-├── android/                         # Configurações Android
-├── ios/                             # Configurações iOS
-├── pubspec.yaml                     # Dependências do projeto
-└── README.md                        # Este arquivo
-```
-
----
-
-## 🔗 Principais Endpoints
-
-### Firebase Authentication
-- `POST /v1/accounts:signUp` - Registro de novo usuário
-- `POST /v1/accounts:signInWithPassword` - Login
-- `POST /v1/accounts:sendOobCode` - Recuperação de senha
-
-### Cloud Firestore Collections
-
-#### `users/{userId}`
-Armazena dados dos responsáveis (pais/mães).
-
-**Campos:**
-- `email`: string
-- `name`: string
-- `createdAt`: timestamp
-- `isAdmin`: boolean
-- `childProfileIds`: array[string] (máximo 4)
-
-#### `child_profiles/{profileId}`
-Armazena perfis das crianças.
-
-**Campos:**
-- `parentUid`: string (referência ao responsável)
-- `name`: string
-- `avatarUrl`: string
-- `pinHash`: string (SHA-256)
-- `age`: number
-- `preferredGenres`: array[string]
-- `favoriteVideoIds`: array[string]
-- `watchHistory`: map{videoId: count}
-- `createdAt`: timestamp
-
-#### `videos/{videoId}`
-Catálogo de vídeos disponíveis.
-
-**Campos:**
-- `title`: string
-- `description`: string
-- `youtubeId`: string (ID do vídeo no YouTube)
-- `thumbnailUrl`: string
-- `genres`: array[string]
-- `durationSeconds`: number
-- `uploadedAt`: timestamp
-- `viewCount`: number
-- `isActive`: boolean
-
----
-
-## 📊 Modelos de Dados
-
-### User Model (Responsável)
+### 8.1 Hash de PIN (SHA-256)
 
 ```dart
-class UserModel {
-  final String uid;
-  final String email;
-  final String name;
-  final DateTime createdAt;
-  final bool isAdmin;
-  final List<String> childProfileIds;
-  
-  UserModel({
-    required this.uid,
-    required this.email,
-    required this.name,
-    required this.createdAt,
-    this.isAdmin = false,
-    this.childProfileIds = const [],
-  });
-  
-  Map<String, dynamic> toMap() { ... }
-  factory UserModel.fromMap(Map<String, dynamic> map) { ... }
-}
-```
-
-### Child Profile Model
-
-```dart
-class ChildProfileModel {
-  final String profileId;
-  final String parentUid;
-  final String name;
-  final String avatarUrl;
-  final String pinHash;
-  final int age;
-  final List<String> preferredGenres;
-  final List<String> favoriteVideoIds;
-  final Map<String, int> watchHistory;
-  
-  ChildProfileModel({
-    required this.profileId,
-    required this.parentUid,
-    required this.name,
-    required this.avatarUrl,
-    required this.pinHash,
-    required this.age,
-    this.preferredGenres = const [],
-    this.favoriteVideoIds = const [],
-    this.watchHistory = const {},
-  });
-  
-  Map<String, dynamic> toMap() { ... }
-  factory ChildProfileModel.fromMap(Map<String, dynamic> map) { ... }
-}
-```
-
-### Video Model
-
-```dart
-class VideoModel {
-  final String videoId;
-  final String title;
-  final String description;
-  final String youtubeId;
-  final String thumbnailUrl;
-  final List<String> genres;
-  final int durationSeconds;
-  final DateTime uploadedAt;
-  final int viewCount;
-  final bool isActive;
-  
-  VideoModel({
-    required this.videoId,
-    required this.title,
-    required this.description,
-    required this.youtubeId,
-    required this.thumbnailUrl,
-    required this.genres,
-    required this.durationSeconds,
-    required this.uploadedAt,
-    this.viewCount = 0,
-    this.isActive = true,
-  });
-  
-  Map<String, dynamic> toMap() { ... }
-  factory VideoModel.fromMap(Map<String, dynamic> map) { ... }
-}
-```
-
----
-
-## 📤 Upload de Vídeos
-
-### Para Administradores
-
-O BluFlix utiliza integração com o YouTube para reprodução de vídeos, evitando custos com armazenamento no Firebase Storage. Para adicionar um novo vídeo:
-
-1. Faça login como administrador
-2. Acesse o Painel Administrativo
-3. Clique em "Adicionar Novo Vídeo"
-4. Preencha os campos:
-   - **Título** (obrigatório)
-   - **Descrição** (opcional)
-   - **URL do YouTube** (formato: `https://www.youtube.com/watch?v=VIDEO_ID`)
-   - **Gêneros** (selecione um ou mais)
-   - **Duração** (em segundos)
-5. Salve o vídeo
-
-O sistema extrairá automaticamente:
-- ID do vídeo no YouTube
-- Thumbnail padrão do YouTube
-- Timestamp de upload
-
-### Gêneros Disponíveis
-
-- 📚 **Educação** - Conteúdo educativo e didático
-- 🎨 **Animação** - Desenhos animados e animações
-- 🎵 **Música** - Canções infantis e música educativa
-- 🌿 **Natureza** - Documentários sobre animais e meio ambiente
-- 🎭 **Arte** - Atividades artísticas e criativas
-- 🔬 **Ciência** - Experimentos e curiosidades científicas
-- ⚽ **Esportes** - Atividades físicas e esportivas
-- 📖 **Histórias** - Narrativas e contos infantis
-
----
-
-## 🔒 Segurança
-
-### Autenticação
-
-#### Responsáveis
-- Autenticação via **Firebase Authentication** (email/senha)
-- Senha mínima de 6 caracteres
-- Validação de email com RegEx
-- Recuperação de senha por email
-
-#### Crianças
-- Autenticação por **PIN de 4 dígitos**
-- Hash SHA-256 do PIN antes de armazenar
-- Sem acesso direto ao Firestore (proteção de dados)
-
-```dart
-import 'package:crypto/crypto.dart';
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
 
 String hashPin(String pin) {
   final bytes = utf8.encode(pin);
-  final digest = sha256.convert(bytes);
-  return digest.toString();
+  final hash = sha256.convert(bytes);
+  return hash.toString();
+}
+
+// Exemplo:
+// Input:  "1234"
+// Output: "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"
+```
+
+### 8.2 Validação de PIN
+
+```dart
+bool _validarPin(String pin) {
+  // Deve ter exatamente 4 dígitos
+  if (pin.length != 4) return false;
+  
+  // Deve conter apenas números
+  if (!RegExp(r'^\d{4}$').hasMatch(pin)) return false;
+  
+  return true;
 }
 ```
 
-### Regras de Firestore
+### 8.3 Verificação Admin
 
-- **Isolamento de dados**: Cada usuário só acessa seus próprios dados
-- **Validação de parentesco**: Perfis infantis verificam `parentUid`
-- **Controle de admin**: Apenas admins podem gerenciar vídeos
-- **Leitura pública de vídeos**: Vídeos são visíveis apenas para usuários autenticados
+```dart
+Future<bool> isAdmin() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return false;
 
-### Validações
+  final userDoc = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(user.uid)
+      .get();
 
-- Email: formato válido obrigatório
-- Senha: mínimo 6 caracteres
-- PIN: exatamente 4 dígitos numéricos
-- Limite: máximo 4 perfis infantis por conta
-- Nome de perfil: mínimo 2 caracteres
-
----
-
-## 📜 Termos de Uso e Privacidade
-
-### Coleta de Dados
-
-O BluFlix coleta e armazena:
-- Email e nome do responsável
-- Nome, idade e avatar dos perfis infantis
-- Histórico de visualizações (anônimo, por perfil)
-- Vídeos favoritos
-- Preferências de gêneros
-
-### Uso de Dados
-
-Os dados são utilizados exclusivamente para:
-- Autenticação e gerenciamento de conta
-- Personalização da experiência
-- Analytics internos (não compartilhados)
-- Melhorias do aplicativo
-
-### Segurança
-
-- Todos os dados são criptografados em trânsito (HTTPS)
-- PINs armazenados com hash SHA-256
-- Acesso restrito por regras de Firestore
-- Nenhum dado é vendido ou compartilhado com terceiros
-
-### Direitos do Usuário
-
-- Acesso aos próprios dados
-- Exclusão de conta e dados a qualquer momento
-- Modificação de informações pessoais
-
-**Nota**: Este é um projeto acadêmico MVP. Para uso em produção, seria necessário adequação completa à LGPD e outras legislações aplicáveis.
+  final tipoUsuario = userDoc.data()?['tipoUsuario'] ?? '';
+  return tipoUsuario == 'admin';
+}
+```
 
 ---
 
-## 🤝 Contribuição
+## 9. Analytics e Monitoramento
 
-Contribuições são bem-vindas! Este é um projeto acadêmico, mas sugestões e melhorias são apreciadas.
+### 9.1 Fluxo de Visualização
 
-### Como Contribuir
+```
+1. Usuário clica em vídeo
+   ↓
+2. iniciarVisualizacao()
+   - Cria documento em analytics/{id}
+   - Registra início
+   - Retorna visualizacaoId
+   ↓
+3. Vídeo é reproduzido
+   - YouTube Player
+   - Tracking de tempo
+   ↓
+4. finalizarVisualizacao()
+   - Atualiza duracaoAssistidaSegundos
+   - Calcula percentualAssistido
+   - Marca concluido se ≥90%
+```
 
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'Adiciona MinhaFeature'`)
-4. Push para a branch (`git push origin feature/MinhaFeature`)
-5. Abra um Pull Request
+### 9.2 Métricas Calculadas
 
-### Diretrizes
+#### Tempo Total de Tela
+```dart
+Future<int> calcularTempoTotalTela(
+  String perfilFilhoApelido, {
+  int? limiteDias,
+}) async {
+  final visualizacoes = await buscarVisualizacoesPerfil(...);
+  return visualizacoes.fold<int>(
+    0,
+    (total, v) => total + v.duracaoAssistidaSegundos,
+  );
+}
+```
 
-- Siga as convenções de código do Flutter/Dart
-- Adicione testes para novas funcionalidades
-- Atualize a documentação quando necessário
-- Descreva claramente as mudanças no PR
+#### Gêneros Mais Assistidos
+```dart
+Future<Map<String, int>> calcularGenerosMaisAssistidos(...) async {
+  // Retorna: {"Educação": 3600, "Música": 2400, ...}
+}
+```
 
----
+#### Taxa de Conclusão
+```dart
+Future<double> calcularTaxaConclusao(...) async {
+  // Retorna percentual médio assistido (0-100)
+}
+```
 
-## 📄 Licença
-
-Este projeto foi desenvolvido como **Trabalho de Conclusão de Curso (TCC)** para a FATEC Carapicuíba e é destinado a fins **acadêmicos e educacionais**.
-
----
-
-## 👨‍💻 Autores
-
-**Rafael (Rafa)**  
-Estudante de Ciência da Computação - FATEC Carapicuíba
-
-- GitHub: [@R4f0so](https://github.com/R4f0so)
-- LinkedIn: [Seu perfil LinkedIn]
-- Email: [seu.email@exemplo.com]
-
-### Orientação Acadêmica
-- **Orientador(a)**: [Nome do Professor(a)]
-- **Instituição**: FATEC Carapicuíba
-- **Curso**: Ciência da Computação
-- **Ano**: 2024
-
----
-
-## 📚 Referências
-
-### Documentação Técnica
-- [Documentação Flutter](https://docs.flutter.dev/)
-- [Firebase para Flutter](https://firebase.flutter.dev/)
-- [Material Design Guidelines](https://material.io/design)
-- [YouTube Player Flutter](https://pub.dev/packages/youtube_player_flutter)
-
-### Acessibilidade e TEA
-- [Acessibilidade no Flutter](https://docs.flutter.dev/development/accessibility-and-localization/accessibility)
-- Diretrizes de design para pessoas com TEA
-- Pesquisas sobre UX para espectro autista
-
-### Artigos Acadêmicos
-- [Inserir artigos relevantes sobre TEA e tecnologia]
-- [Inserir referências sobre streaming educacional]
+#### Frequência por Dia da Semana
+```dart
+Future<Map<String, int>> calcularFrequenciaPorDia(...) async {
+  // Retorna: {"Segunda": 5, "Terça": 3, ...}
+}
+```
 
 ---
 
-## 📸 Screenshots
+## 10. Configuração do Projeto
 
-### Tela de Login
-![Login](assets/screenshots/login.png)
+### 10.1 Configuração Firebase (firebase.json)
 
-### Seleção de Perfil
-![Perfis](assets/screenshots/profiles.png)
+```json
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "bluflix-tg",
+          "appId": "1:846678971915:android:dd3925f1bb6e571fb4190e",
+          "fileOutput": "android/app/google-services.json"
+        }
+      }
+    }
+  }
+}
+```
 
-### Catálogo de Vídeos
-![Catálogo](assets/screenshots/catalog.png)
+### 10.2 Ícone do App (pubspec.yaml)
 
-### Reprodução de Vídeo
-![Player](assets/screenshots/player.png)
+```yaml
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo_1024.png"
+  adaptive_icon_background: "#A9DBF4"
+  adaptive_icon_foreground: "assets/logo_1024.png"
+  remove_alpha_ios: true
+  min_sdk_android: 21
+  adaptive_icon_foreground_inset: 16
+  adaptive_icon_round: "assets/logo_1024.png"
+  
+  web:
+    generate: true
+    image_path: "assets/logo_1024.png"
+    background_color: "#A9DBF4"
+```
 
-### Painel Administrativo
-![Admin](assets/screenshots/admin.png)
+### 10.3 Assets
 
----
-
-## 📝 Observações Finais
-
-O **BluFlix** é um **MVP** (Minimum Viable Product) destinado a validar conceitos de usabilidade e acessibilidade para pessoas do espectro autista nível 1 de suporte.
-
-### Status do Projeto
-
-✅ **Completo no MVP:**
-- Sistema de autenticação dual
-- Multi-perfil com isolamento de dados
-- Catálogo e reprodução de vídeos
-- Sistema de favoritos
-- Painel administrativo
-- Temas claro/escuro
-
-🚧 **Em Desenvolvimento:**
-- Sistema de busca avançada
-- Recomendações personalizadas
-- Controle parental detalhado
-- Analytics avançados
-- Modo offline
-
-### Próximos Passos
-
-Funcionalidades adicionais e refinamentos estão planejados para futuras versões, incluindo:
-- Testes de usabilidade com o público-alvo
-- Feedback de terapeutas e especialistas em TEA
-- Expansão do catálogo de vídeos educacionais
-- Melhorias de performance e otimização
-- Publicação nas lojas (Google Play / App Store)
-
-**Nota**: Estas funcionalidades não fazem parte desta entrega acadêmica inicial.
-
----
-
-## 🙏 Agradecimentos
-
-- **FATEC Carapicuíba** - Pela oportunidade e suporte acadêmico
-- **Professores e Orientadores** - Pela orientação durante o desenvolvimento
-- **Comunidade Flutter** - Pela documentação e recursos
-- **Firebase** - Pela plataforma backend robusta e gratuita para MVPs
-- **Famílias com crianças TEA** - Pela inspiração e motivação do projeto
-
----
-
-## 📞 Suporte e Contato
-
-Encontrou um bug? Tem uma sugestão? Entre em contato:
-
-- 🐛 [Abra uma Issue](https://github.com/R4f0so/bluflix/issues)
-- 💬 [Discussões no GitHub](https://github.com/R4f0so/bluflix/discussions)
-- 📧 Email: [seu.email@exemplo.com]
+```yaml
+assets:
+  - assets/logo.png
+  - assets/morning_background.png
+  - assets/night_background.png
+  - assets/google.png
+  - assets/facebook.png
+  - assets/avatar1.png
+  - assets/avatar2.png
+  - assets/avatar3.png
+  - assets/avatar4.png
+  - assets/avatar5.png
+  - assets/avatar6.png
+  - assets/avatar7.png
+  - assets/avatar8.png
+```
 
 ---
 
-<div align="center">
+## Apêndices
 
-**Desenvolvido com ❤️ para tornar o streaming educacional mais acessível**
+### A. Exceções Customizadas
 
-⭐ Se este projeto foi útil para você ou seu TCC, considere dar uma estrela!
+```dart
+class VideoServiceException implements Exception {
+  final String message;
+  VideoServiceException(this.message);
 
-[![GitHub stars](https://img.shields.io/github/stars/R4f0so/bluflix.svg?style=social)](https://github.com/R4f0so/bluflix/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/R4f0so/bluflix.svg?style=social)](https://github.com/R4f0so/bluflix/network)
+  @override
+  String toString() => 'VideoServiceException: $message';
+}
+```
 
-</div>
+### B. Padrões de Nomenclatura
+
+- **Classes**: PascalCase (ex: `VideoModelYoutube`)
+- **Métodos**: camelCase (ex: `buscarTodosVideos`)
+- **Variáveis privadas**: _camelCase (ex: `_firestore`)
+- **Constantes**: UPPER_SNAKE_CASE ou camelCase
+
+### C. Convenções de Código
+
+- Uso de `final` para variáveis imutáveis
+- Comentários com separadores visuais `═══════...`
+- Emojis em logs para fácil identificação (✅ ❌ ⚠️ 🔄)
+- Try-catch em todas as operações async
+- Prints informativos para debug
+
+---
+
+**Última atualização**: Novembro 2024  
+**Versão**: 1.0  
+**Projeto ID**: bluflix-tg
