@@ -26,6 +26,7 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
   // Analytics
   final AnalyticsService _analyticsService = AnalyticsService();
   String? _visualizacaoId;
+  String? _sessaoId; // ✅ NOVO
   int _ultimaPosicao = 0;
   int _tempoTotalAssistido = 0;
 
@@ -38,40 +39,40 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
     super.initState();
     _inicializarPlayer();
     _iniciarRegistroVisualizacao();
+    _iniciarSessao(); // ✅ NOVO
     _carregarFavoritos();
   }
 
   void _inicializarPlayer() {
-    _controller =
-        YoutubePlayerController(
-          initialVideoId: widget.video.youtubeId,
-          flags: const YoutubePlayerFlags(
-            autoPlay: true,
-            mute: false,
-            enableCaption: true,
-            controlsVisibleAtStart: true,
-            hideControls: false,
-          ),
-        )..addListener(() {
-          if (_controller.value.isReady && !_isPlayerReady) {
-            if (!mounted) return;
-            setState(() {
-              _isPlayerReady = true;
-            });
+    _controller = YoutubePlayerController(
+      initialVideoId: widget.video.youtubeId,
+      flags: const YoutubePlayerFlags(
+        autoPlay: true,
+        mute: false,
+        enableCaption: true,
+        controlsVisibleAtStart: true,
+        hideControls: false,
+      ),
+    )..addListener(() {
+        if (_controller.value.isReady && !_isPlayerReady) {
+          if (!mounted) return;
+          setState(() {
+            _isPlayerReady = true;
+          });
+        }
+
+        // Rastrear tempo assistido
+        if (_controller.value.isPlaying) {
+          final posicaoAtual = _controller.value.position.inSeconds;
+
+          if (posicaoAtual > _ultimaPosicao &&
+              posicaoAtual - _ultimaPosicao <= 2) {
+            _tempoTotalAssistido += (posicaoAtual - _ultimaPosicao);
           }
 
-          // Rastrear tempo assistido
-          if (_controller.value.isPlaying) {
-            final posicaoAtual = _controller.value.position.inSeconds;
-
-            if (posicaoAtual > _ultimaPosicao &&
-                posicaoAtual - _ultimaPosicao <= 2) {
-              _tempoTotalAssistido += (posicaoAtual - _ultimaPosicao);
-            }
-
-            _ultimaPosicao = posicaoAtual;
-          }
-        });
+          _ultimaPosicao = posicaoAtual;
+        }
+      });
   }
 
   Future<void> _iniciarRegistroVisualizacao() async {
@@ -104,9 +105,17 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
     }
   }
 
+  // ✅ NOVO: Iniciar Sessão
+  Future<void> _iniciarSessao() async {
+    final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
+    final perfilApelido = perfilProvider.perfilAtivoApelido ?? 'Usuário';
+
+    _sessaoId = await _analyticsService.iniciarSessao(perfilApelido);
+    print('🎬 Sessão iniciada: $_sessaoId para perfil: $perfilApelido');
+  }
+
   Future<void> _finalizarRegistroVisualizacao() async {
     if (_visualizacaoId != null) {
-      // ✅ ATUALIZADO: Passa o perfil ao finalizar
       final perfilProvider = Provider.of<PerfilProvider>(
         context,
         listen: false,
@@ -115,7 +124,7 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
       await _analyticsService.finalizarVisualizacao(
         visualizacaoId: _visualizacaoId!,
         duracaoAssistidaSegundos: _tempoTotalAssistido,
-        perfilFilhoApelido: perfilProvider.perfilAtivoApelido, // ✅ NOVO
+        perfilFilhoApelido: perfilProvider.perfilAtivoApelido,
       );
 
       final duracaoTotal = _controller.metadata.duration.inSeconds;
@@ -129,20 +138,28 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
     }
   }
 
-  // ✅ ATUALIZADO: Carregar favoritos da subcoleção do perfil
+  // ✅ NOVO: Finalizar Sessão
+  Future<void> _finalizarSessao() async {
+    if (_sessaoId != null) {
+      final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
+      final perfilApelido = perfilProvider.perfilAtivoApelido ?? 'Usuário';
+
+      await _analyticsService.finalizarSessao(_sessaoId!, perfilApelido);
+      print('🎬 Sessão finalizada: $_sessaoId');
+    }
+  }
+
   Future<void> _carregarFavoritos() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      // ✅ Pegar o perfil ativo
       final perfilProvider = Provider.of<PerfilProvider>(
         context,
         listen: false,
       );
       final perfilAtivo = perfilProvider.perfilAtivoApelido ?? 'Usuário';
 
-      // ✅ NOVO CAMINHO: users/{uid}/perfis/{perfil}/favoritos
       final favoritosSnapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -165,13 +182,11 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
     }
   }
 
-  // ✅ ATUALIZADO: Toggle favorito na subcoleção do perfil
   Future<void> _toggleFavorito() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      // ✅ Pegar o perfil ativo
       final perfilProvider = Provider.of<PerfilProvider>(
         context,
         listen: false,
@@ -180,7 +195,6 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
 
       final videoId = widget.video.youtubeId;
 
-      // ✅ NOVO CAMINHO: users/{uid}/perfis/{perfil}/favoritos
       final favoritosRef = FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -189,9 +203,6 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
           .collection('favoritos');
 
       if (_isFavorito) {
-        // ═══════════════════════════════════════════════════════
-        // REMOVER DOS FAVORITOS
-        // ═══════════════════════════════════════════════════════
         final querySnapshot = await favoritosRef
             .where('videoId', isEqualTo: videoId)
             .limit(1)
@@ -216,9 +227,6 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
           ),
         );
       } else {
-        // ═══════════════════════════════════════════════════════
-        // ADICIONAR AOS FAVORITOS
-        // ═══════════════════════════════════════════════════════
         await favoritosRef.add({
           'videoId': videoId,
           'titulo': widget.video.titulo,
@@ -261,6 +269,7 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
   @override
   void dispose() {
     _finalizarRegistroVisualizacao();
+    _finalizarSessao(); // ✅ NOVO
     _controller.dispose();
     super.dispose();
   }
@@ -273,7 +282,6 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
       canPop: true,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) {
-          // Retorna true para indicar mudança nos favoritos
           context.pop(true);
         }
       },
@@ -306,12 +314,12 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
                 icon: const Icon(Icons.arrow_back, size: 28),
                 onPressed: () async {
                   await _finalizarRegistroVisualizacao();
+                  await _finalizarSessao(); // ✅ NOVO
                   if (!mounted) return;
                   if (context.mounted) context.pop(true);
                 },
               ),
               actions: [
-                // Botão de favorito no AppBar
                 IconButton(
                   onPressed: _toggleFavorito,
                   icon: Icon(
@@ -326,10 +334,7 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Player
                   player,
-
-                  // Informações do vídeo
                   Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
@@ -343,9 +348,7 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
                             color: appTema.textColor,
                           ),
                         ),
-
                         const SizedBox(height: 16),
-
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
@@ -370,17 +373,13 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
                             );
                           }).toList(),
                         ),
-
                         const SizedBox(height: 20),
-
                         Divider(
                           color: appTema.isDarkMode
                               ? Colors.white.withValues(alpha: 0.2)
                               : Colors.black.withValues(alpha: 0.1),
                         ),
-
                         const SizedBox(height: 20),
-
                         if (widget.video.descricao.isNotEmpty) ...[
                           Text(
                             'Descrição',
@@ -400,9 +399,7 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
                             ),
                           ),
                         ],
-
                         const SizedBox(height: 24),
-
                         Row(
                           children: [
                             Icon(
@@ -426,10 +423,10 @@ class _VideoPlayerYoutubeScreenState extends State<VideoPlayerYoutubeScreen> {
                 ],
               ),
             ),
-            // FAB de Favoritos
             floatingActionButton: FloatingActionButton.extended(
               onPressed: () async {
                 await _finalizarRegistroVisualizacao();
+                await _finalizarSessao(); // ✅ NOVO
                 if (!mounted) return;
                 if (!context.mounted) return;
                 context.pop(true);

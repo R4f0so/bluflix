@@ -27,12 +27,11 @@ class _PerfilFilhoAnalyticsScreenState
   int _tempoTotalTela = 0;
   Map<String, int> _generosMaisAssistidos = {};
   List<VideoVisualizacao> _videosMaisAssistidos = [];
-  double _taxaConclusao = 0;
+  double _taxaReassistencia = 0; // ✅ NOVO
   int _duracaoMediaSessao = 0;
   Map<String, int> _frequenciaPorDia = {};
 
-  // Filtro de período
-  int _periodoSelecionado = 7; // 7 dias por padrão
+  int _periodoSelecionado = 7;
 
   @override
   void initState() {
@@ -46,39 +45,59 @@ class _PerfilFilhoAnalyticsScreenState
     try {
       final tempoTotal = await _analyticsService.calcularTempoTotalTela(
         widget.perfilFilhoApelido,
-        limiteDias: _periodoSelecionado,
+        limiteDias: _periodoSelecionado == -1 ? null : _periodoSelecionado,
       );
+      print('📊 Tempo Total: $tempoTotal segundos');
 
       final generos = await _analyticsService.calcularGenerosMaisAssistidos(
         widget.perfilFilhoApelido,
-        limiteDias: _periodoSelecionado,
+        limiteDias: _periodoSelecionado == -1 ? null : _periodoSelecionado,
       );
+      print('📊 Gêneros: $generos');
 
       final videos = await _analyticsService.buscarVideosMaisAssistidos(
         widget.perfilFilhoApelido,
         limite: 5,
       );
+      print('📊 Vídeos: ${videos.length}');
 
       final taxa = await _analyticsService.calcularTaxaConclusao(
         widget.perfilFilhoApelido,
-        limiteDias: _periodoSelecionado,
+        limiteDias: _periodoSelecionado == -1 ? null : _periodoSelecionado,
       );
+      print('📊 Taxa Conclusão: $taxa%');
 
       final duracaoMedia = await _analyticsService.calcularDuracaoMediaSessao(
         widget.perfilFilhoApelido,
-        limiteDias: _periodoSelecionado,
+        limiteDias: _periodoSelecionado == -1 ? null : _periodoSelecionado,
       );
+      print('📊 Duração Média Sessão: $duracaoMedia segundos');
 
       final frequencia = await _analyticsService.calcularFrequenciaPorDia(
         widget.perfilFilhoApelido,
-        limiteDias: _periodoSelecionado,
+        limiteDias: _periodoSelecionado == -1 ? null : _periodoSelecionado,
       );
+      print('📊 Frequência por Dia: $frequencia');
+
+      // ✅ NOVO: Calcular taxa de reassistência
+      final totalVisualizacoes = videos.fold<int>(
+        0,
+        (sum, video) => sum + video.vezesReassistido + 1,
+      );
+      final totalReassistencias = videos.fold<int>(
+        0,
+        (sum, video) => sum + video.vezesReassistido,
+      );
+      final taxaReassistencia = totalVisualizacoes > 0 
+          ? (totalReassistencias / totalVisualizacoes * 100) 
+          : 0.0;
+      print('📊 Taxa Reassistência: $taxaReassistencia%');
 
       setState(() {
         _tempoTotalTela = tempoTotal;
         _generosMaisAssistidos = generos;
         _videosMaisAssistidos = videos;
-        _taxaConclusao = taxa;
+        _taxaReassistencia = taxaReassistencia; // ✅ NOVO
         _duracaoMediaSessao = duracaoMedia;
         _frequenciaPorDia = frequencia;
         _isLoading = false;
@@ -140,16 +159,9 @@ class _PerfilFilhoAnalyticsScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ═══════════════════════════════════════════════
-                    // FILTRO DE PERÍODO
-                    // ═══════════════════════════════════════════════
                     _buildFiltroPeriodo(appTema),
-
                     const SizedBox(height: 24),
 
-                    // ═══════════════════════════════════════════════
-                    // CARDS DE RESUMO
-                    // ═══════════════════════════════════════════════
                     Row(
                       children: [
                         Expanded(
@@ -176,13 +188,14 @@ class _PerfilFilhoAnalyticsScreenState
 
                     const SizedBox(height: 16),
 
+                    // ✅ ATUALIZADO: Reassistência em vez de Conclusão
                     Row(
                       children: [
                         Expanded(
                           child: _buildStatCard(
-                            icon: Icons.check_circle,
-                            titulo: 'Conclusão',
-                            valor: '${_taxaConclusao.toStringAsFixed(0)}%',
+                            icon: Icons.replay, // ✅ MUDADO
+                            titulo: 'Reassistidos', // ✅ MUDADO
+                            valor: '${_taxaReassistencia.toStringAsFixed(0)}%', // ✅ MUDADO
                             cor: Colors.green,
                             appTema: appTema,
                           ),
@@ -202,27 +215,18 @@ class _PerfilFilhoAnalyticsScreenState
 
                     const SizedBox(height: 32),
 
-                    // ═══════════════════════════════════════════════
-                    // GÊNEROS MAIS ASSISTIDOS
-                    // ═══════════════════════════════════════════════
                     _buildSecaoTitulo('📊 Gêneros Assistidos', appTema),
                     const SizedBox(height: 16),
                     _buildGenerosList(appTema),
 
                     const SizedBox(height: 32),
 
-                    // ═══════════════════════════════════════════════
-                    // VÍDEOS MAIS ASSISTIDOS
-                    // ═══════════════════════════════════════════════
                     _buildSecaoTitulo('🎬 Vídeos Assistidos', appTema),
                     const SizedBox(height: 16),
                     _buildVideosList(appTema),
 
                     const SizedBox(height: 32),
 
-                    // ═══════════════════════════════════════════════
-                    // FREQUÊNCIA POR DIA DA SEMANA
-                    // ═══════════════════════════════════════════════
                     _buildSecaoTitulo('📅 Dias Mais Ativos', appTema),
                     const SizedBox(height: 16),
                     _buildFrequenciaChart(appTema),
@@ -232,10 +236,6 @@ class _PerfilFilhoAnalyticsScreenState
             ),
     );
   }
-
-  // ═══════════════════════════════════════════════════════════════
-  // WIDGETS AUXILIARES
-  // ═══════════════════════════════════════════════════════════════
 
   Widget _buildFiltroPeriodo(AppTema appTema) {
     return Row(
@@ -366,12 +366,8 @@ class _PerfilFilhoAnalyticsScreenState
       return _buildEstadoVazio('Nenhum gênero assistido ainda', appTema);
     }
 
-    final totalSegundos = _generosMaisAssistidos.values.fold(
-      0,
-      (a, b) => a + b,
-    );
+    final totalSegundos = _generosMaisAssistidos.values.fold(0, (a, b) => a + b);
 
-    // ✅ CORRIGIDO: Verifica se totalSegundos é zero
     if (totalSegundos == 0) {
       return _buildEstadoVazio('Nenhum tempo registrado', appTema);
     }

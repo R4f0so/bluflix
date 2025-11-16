@@ -259,7 +259,7 @@ class AnalyticsService {
       var query = analyticsRef.orderBy('inicioVisualizacao', descending: true);
 
       // Filtrar por período se especificado
-      if (limiteDias != null) {
+      if (limiteDias != null && limiteDias > 0) {
         final dataLimite = DateTime.now().subtract(Duration(days: limiteDias));
         query = query.where(
           'inicioVisualizacao',
@@ -393,7 +393,7 @@ class AnalyticsService {
       final sessoesRef = _getSessoesRef(user.uid, perfilApelido);
       var query = sessoesRef.orderBy('inicioSessao', descending: true);
 
-      if (limiteDias != null) {
+      if (limiteDias != null && limiteDias > 0) {
         final dataLimite = DateTime.now().subtract(Duration(days: limiteDias));
         query = query.where(
           'inicioSessao',
@@ -427,12 +427,17 @@ class AnalyticsService {
 
     if (sessoes.isEmpty) return 0;
 
-    final totalDuracao = sessoes.fold<int>(
+    // ✅ CORRIGIDO: Filtrar apenas sessões com duração > 0
+    final sessoesValidas = sessoes.where((s) => s.duracaoSegundos > 0).toList();
+
+    if (sessoesValidas.isEmpty) return 0;
+
+    final totalDuracao = sessoesValidas.fold<int>(
       0,
       (total, s) => total + s.duracaoSegundos,
     );
 
-    return totalDuracao ~/ sessoes.length;
+    return totalDuracao ~/ sessoesValidas.length;
   }
 
   /// Calcula frequência de uso (dias da semana)
@@ -466,10 +471,19 @@ class AnalyticsService {
     ];
 
     for (var sessao in sessoes) {
-      final diaSemana = sessao.inicioSessao.weekday; // 1 = Monday, 7 = Sunday
-      final nomeDia = diasDaSemana[diaSemana - 1];
+      // ✅ CORRIGIDO: weekday retorna 1-7 (1=Monday, 7=Sunday)
+      final diaSemana = sessao.inicioSessao.weekday;
+
+      // ✅ Mapear corretamente para índice do array
+      // weekday 1 (Monday) = index 0 (Segunda)
+      // weekday 7 (Sunday) = index 6 (Domingo)
+      final index = diaSemana == 7 ? 6 : diaSemana - 1;
+      final nomeDia = diasDaSemana[index];
+
       frequencia[nomeDia] = (frequencia[nomeDia] ?? 0) + 1;
     }
+
+    print('📅 Frequência calculada: $frequencia'); // ✅ DEBUG
 
     return frequencia;
   }
