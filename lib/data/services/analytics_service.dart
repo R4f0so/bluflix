@@ -52,12 +52,10 @@ class AnalyticsService {
       final user = _auth.currentUser;
       if (user == null) return null;
 
-      // ✅ Usa o nome do perfil ou 'Usuário' para perfil pai
       final perfilApelido = perfilFilhoApelido.isNotEmpty
           ? perfilFilhoApelido
           : 'Usuário';
 
-      // Verificar se já existe visualização deste vídeo nas últimas 24h
       final visualizacaoExistente = await _buscarVisualizacaoRecente(
         user.uid,
         perfilApelido,
@@ -67,7 +65,6 @@ class AnalyticsService {
       final analyticsRef = _getAnalyticsRef(user.uid, perfilApelido);
 
       if (visualizacaoExistente != null) {
-        // Incrementa vezesReassistido
         await analyticsRef.doc(visualizacaoExistente).update({
           'vezesReassistido': FieldValue.increment(1),
           'inicioVisualizacao': Timestamp.now(),
@@ -77,14 +74,13 @@ class AnalyticsService {
         return visualizacaoExistente;
       }
 
-      // Criar nova visualização
       final visualizacao = VideoVisualizacao(
-        id: '', // Será gerado pelo Firestore
+        id: '',
         videoId: videoId,
         videoTitulo: videoTitulo,
         videoThumbnail: videoThumbnail,
         genero: genero,
-        perfilFilhoApelido: perfilApelido, // ✅ Mantido por compatibilidade
+        perfilFilhoApelido: perfilApelido,
         inicioVisualizacao: DateTime.now(),
         duracaoAssistidaSegundos: 0,
         duracaoTotalSegundos: duracaoTotalSegundos,
@@ -109,13 +105,12 @@ class AnalyticsService {
   Future<void> finalizarVisualizacao({
     required String visualizacaoId,
     required int duracaoAssistidaSegundos,
-    String? perfilFilhoApelido, // ✅ NOVO: Precisa saber qual perfil
+    String? perfilFilhoApelido,
   }) async {
     try {
       final user = _auth.currentUser;
       if (user == null) return;
 
-      // ✅ Se não passar o perfil, tenta buscar da visualização
       if (perfilFilhoApelido == null || perfilFilhoApelido.isEmpty) {
         print('⚠️ Perfil não informado ao finalizar visualização');
         return;
@@ -130,8 +125,7 @@ class AnalyticsService {
       final data = doc.data() as Map<String, dynamic>;
       final duracaoTotal = data['duracaoTotalSegundos'] as int;
       final percentual = (duracaoAssistidaSegundos / duracaoTotal * 100);
-      final concluido =
-          percentual >= 90; // Considera concluído se assistiu 90%+
+      final concluido = percentual >= 90;
 
       await docRef.update({
         'fimVisualizacao': Timestamp.now(),
@@ -207,7 +201,7 @@ class AnalyticsService {
   /// Finaliza sessão (quando sai do app)
   Future<void> finalizarSessao(
     String sessaoId,
-    String perfilFilhoApelido, // ✅ NOVO: Precisa saber qual perfil
+    String perfilFilhoApelido,
   ) async {
     try {
       final user = _auth.currentUser;
@@ -258,7 +252,6 @@ class AnalyticsService {
       final analyticsRef = _getAnalyticsRef(user.uid, perfilApelido);
       var query = analyticsRef.orderBy('inicioVisualizacao', descending: true);
 
-      // Filtrar por período se especificado
       if (limiteDias != null && limiteDias > 0) {
         final dataLimite = DateTime.now().subtract(Duration(days: limiteDias));
         query = query.where(
@@ -315,7 +308,6 @@ class AnalyticsService {
       generos[v.genero] = (generos[v.genero] ?? 0) + v.duracaoAssistidaSegundos;
     }
 
-    // Ordenar por tempo (maior para menor)
     final sorted = Map.fromEntries(
       generos.entries.toList()..sort((a, b) => b.value.compareTo(a.value)),
     );
@@ -323,7 +315,7 @@ class AnalyticsService {
     return sorted;
   }
 
-  /// Retorna vídeos mais assistidos (com reexibições)
+  /// Retorna vídeos mais assistidos (AGRUPADOS por videoId)
   Future<List<VideoVisualizacao>> buscarVideosMaisAssistidos(
     String perfilFilhoApelido, {
     int limite = 10,
@@ -338,19 +330,52 @@ class AnalyticsService {
 
       final analyticsRef = _getAnalyticsRef(user.uid, perfilApelido);
 
+      // ✅ CORRIGIDO: Buscar TODAS as visualizações
       final snapshot = await analyticsRef
-          .orderBy('vezesReassistido', descending: true)
-          .limit(limite)
+          .orderBy('inicioVisualizacao', descending: true)
           .get();
 
-      return snapshot.docs
-          .map(
-            (doc) => VideoVisualizacao.fromMap(
-              doc.id,
-              doc.data() as Map<String, dynamic>,
-            ),
-          )
-          .toList();
+      // ✅ NOVO: Agrupar por videoId e somar vezesReassistido
+      final Map<String, VideoVisualizacao> videosAgrupados = {};
+
+      for (var doc in snapshot.docs) {
+        final visualizacao = VideoVisualizacao.fromMap(
+          doc.id,
+          doc.data() as Map<String, dynamic>,
+        );
+
+        final videoId = visualizacao.videoId;
+
+        if (videosAgrupados.containsKey(videoId)) {
+          // ✅ Vídeo já existe: somar vezesReassistido
+          final existente = videosAgrupados[videoId]!;
+          videosAgrupados[videoId] = VideoVisualizacao(
+            id: existente.id,
+            videoId: existente.videoId,
+            videoTitulo: existente.videoTitulo,
+            videoThumbnail: existente.videoThumbnail,
+            genero: existente.genero,
+            perfilFilhoApelido: existente.perfilFilhoApelido,
+            inicioVisualizacao: existente.inicioVisualizacao,
+            duracaoAssistidaSegundos: existente.duracaoAssistidaSegundos,
+            duracaoTotalSegundos: existente.duracaoTotalSegundos,
+            percentualAssistido: existente.percentualAssistido,
+            concluido: existente.concluido,
+            // ✅ Somar todas as visualizações
+            vezesReassistido:
+                existente.vezesReassistido + visualizacao.vezesReassistido + 1,
+          );
+        } else {
+          // ✅ Primeira vez: adicionar ao mapa
+          videosAgrupados[videoId] = visualizacao;
+        }
+      }
+
+      // ✅ Ordenar por vezesReassistido e limitar
+      final videosOrdenados = videosAgrupados.values.toList()
+        ..sort((a, b) => b.vezesReassistido.compareTo(a.vezesReassistido));
+
+      return videosOrdenados.take(limite).toList();
     } catch (e) {
       print('❌ Erro ao buscar vídeos mais assistidos: $e');
       return [];
@@ -427,7 +452,6 @@ class AnalyticsService {
 
     if (sessoes.isEmpty) return 0;
 
-    // ✅ CORRIGIDO: Filtrar apenas sessões com duração > 0
     final sessoesValidas = sessoes.where((s) => s.duracaoSegundos > 0).toList();
 
     if (sessoesValidas.isEmpty) return 0;
@@ -471,19 +495,14 @@ class AnalyticsService {
     ];
 
     for (var sessao in sessoes) {
-      // ✅ CORRIGIDO: weekday retorna 1-7 (1=Monday, 7=Sunday)
       final diaSemana = sessao.inicioSessao.weekday;
-
-      // ✅ Mapear corretamente para índice do array
-      // weekday 1 (Monday) = index 0 (Segunda)
-      // weekday 7 (Sunday) = index 6 (Domingo)
       final index = diaSemana == 7 ? 6 : diaSemana - 1;
       final nomeDia = diasDaSemana[index];
 
       frequencia[nomeDia] = (frequencia[nomeDia] ?? 0) + 1;
     }
 
-    print('📅 Frequência calculada: $frequencia'); // ✅ DEBUG
+    print('📅 Frequência calculada: $frequencia');
 
     return frequencia;
   }

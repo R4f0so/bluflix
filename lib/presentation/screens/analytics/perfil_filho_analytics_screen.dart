@@ -27,7 +27,7 @@ class _PerfilFilhoAnalyticsScreenState
   int _tempoTotalTela = 0;
   Map<String, int> _generosMaisAssistidos = {};
   List<VideoVisualizacao> _videosMaisAssistidos = [];
-  double _taxaReassistencia = 0; // ✅ NOVO
+  double _taxaReassistencia = 0;
   int _duracaoMediaSessao = 0;
   Map<String, int> _frequenciaPorDia = {};
 
@@ -61,12 +61,6 @@ class _PerfilFilhoAnalyticsScreenState
       );
       print('📊 Vídeos: ${videos.length}');
 
-      final taxa = await _analyticsService.calcularTaxaConclusao(
-        widget.perfilFilhoApelido,
-        limiteDias: _periodoSelecionado == -1 ? null : _periodoSelecionado,
-      );
-      print('📊 Taxa Conclusão: $taxa%');
-
       final duracaoMedia = await _analyticsService.calcularDuracaoMediaSessao(
         widget.perfilFilhoApelido,
         limiteDias: _periodoSelecionado == -1 ? null : _periodoSelecionado,
@@ -79,25 +73,38 @@ class _PerfilFilhoAnalyticsScreenState
       );
       print('📊 Frequência por Dia: $frequencia');
 
-      // ✅ NOVO: Calcular taxa de reassistência
-      final totalVisualizacoes = videos.fold<int>(
-        0,
-        (sum, video) => sum + video.vezesReassistido + 1,
-      );
-      final totalReassistencias = videos.fold<int>(
-        0,
-        (sum, video) => sum + video.vezesReassistido,
-      );
-      final taxaReassistencia = totalVisualizacoes > 0 
-          ? (totalReassistencias / totalVisualizacoes * 100) 
+      // ✅ CORRIGIDO: Calcular taxa de reassistência de TODOS os vídeos
+      final todasVisualizacoes = await _analyticsService
+          .buscarVisualizacoesPerfil(
+            widget.perfilFilhoApelido,
+            limiteDias: _periodoSelecionado == -1 ? null : _periodoSelecionado,
+          );
+
+      // Agrupar por videoId para contar visualizações únicas
+      final Set<String> videosUnicos = {};
+      int totalReassistencias = 0;
+
+      for (var vis in todasVisualizacoes) {
+        videosUnicos.add(vis.videoId);
+        totalReassistencias += vis.vezesReassistido;
+      }
+
+      final totalVisualizacoes = videosUnicos.length + totalReassistencias;
+      final taxaReassistencia = totalVisualizacoes > 0
+          ? (totalReassistencias / totalVisualizacoes * 100)
           : 0.0;
-      print('📊 Taxa Reassistência: $taxaReassistencia%');
+
+      print('📊 Taxa Reassistência:');
+      print('   Vídeos únicos: ${videosUnicos.length}');
+      print('   Total reassistências: $totalReassistencias');
+      print('   Total visualizações: $totalVisualizacoes');
+      print('   Taxa: $taxaReassistencia%');
 
       setState(() {
         _tempoTotalTela = tempoTotal;
         _generosMaisAssistidos = generos;
         _videosMaisAssistidos = videos;
-        _taxaReassistencia = taxaReassistencia; // ✅ NOVO
+        _taxaReassistencia = taxaReassistencia;
         _duracaoMediaSessao = duracaoMedia;
         _frequenciaPorDia = frequencia;
         _isLoading = false;
@@ -188,14 +195,13 @@ class _PerfilFilhoAnalyticsScreenState
 
                     const SizedBox(height: 16),
 
-                    // ✅ ATUALIZADO: Reassistência em vez de Conclusão
                     Row(
                       children: [
                         Expanded(
                           child: _buildStatCard(
-                            icon: Icons.replay, // ✅ MUDADO
-                            titulo: 'Reassistidos', // ✅ MUDADO
-                            valor: '${_taxaReassistencia.toStringAsFixed(0)}%', // ✅ MUDADO
+                            icon: Icons.replay,
+                            titulo: 'Reassistidos',
+                            valor: '${_taxaReassistencia.toStringAsFixed(0)}%',
                             cor: Colors.green,
                             appTema: appTema,
                           ),
@@ -366,7 +372,10 @@ class _PerfilFilhoAnalyticsScreenState
       return _buildEstadoVazio('Nenhum gênero assistido ainda', appTema);
     }
 
-    final totalSegundos = _generosMaisAssistidos.values.fold(0, (a, b) => a + b);
+    final totalSegundos = _generosMaisAssistidos.values.fold(
+      0,
+      (a, b) => a + b,
+    );
 
     if (totalSegundos == 0) {
       return _buildEstadoVazio('Nenhum tempo registrado', appTema);
