@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 // ANALYTICS SERVICE - Gerencia dados de visualização
+// ✅ ATUALIZADO: Usa subcoleções por perfil
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,6 +10,30 @@ import 'package:bluflix/data/models/video_visualizacao_model.dart';
 class AnalyticsService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // ═══════════════════════════════════════════════════════════════
+  // ✅ NOVO: Helper para obter referência da subcoleção analytics
+  // ═══════════════════════════════════════════════════════════════
+  CollectionReference _getAnalyticsRef(String userId, String perfilApelido) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('perfis')
+        .doc(perfilApelido)
+        .collection('analytics');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ✅ NOVO: Helper para obter referência da subcoleção sessoes
+  // ═══════════════════════════════════════════════════════════════
+  CollectionReference _getSessoesRef(String userId, String perfilApelido) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('perfis')
+        .doc(perfilApelido)
+        .collection('sessoes');
+  }
 
   // ═══════════════════════════════════════════════════════════════
   // REGISTRAR VISUALIZAÇÃO
@@ -27,21 +52,23 @@ class AnalyticsService {
       final user = _auth.currentUser;
       if (user == null) return null;
 
+      // ✅ Usa o nome do perfil ou 'Usuário' para perfil pai
+      final perfilApelido = perfilFilhoApelido.isNotEmpty
+          ? perfilFilhoApelido
+          : 'Usuário';
+
       // Verificar se já existe visualização deste vídeo nas últimas 24h
       final visualizacaoExistente = await _buscarVisualizacaoRecente(
         user.uid,
-        perfilFilhoApelido,
+        perfilApelido,
         videoId,
       );
 
+      final analyticsRef = _getAnalyticsRef(user.uid, perfilApelido);
+
       if (visualizacaoExistente != null) {
         // Incrementa vezesReassistido
-        await _firestore
-            .collection('users')
-            .doc(user.uid)
-            .collection('analytics')
-            .doc(visualizacaoExistente)
-            .update({
+        await analyticsRef.doc(visualizacaoExistente).update({
           'vezesReassistido': FieldValue.increment(1),
           'inicioVisualizacao': Timestamp.now(),
         });
@@ -57,7 +84,7 @@ class AnalyticsService {
         videoTitulo: videoTitulo,
         videoThumbnail: videoThumbnail,
         genero: genero,
-        perfilFilhoApelido: perfilFilhoApelido,
+        perfilFilhoApelido: perfilApelido, // ✅ Mantido por compatibilidade
         inicioVisualizacao: DateTime.now(),
         duracaoAssistidaSegundos: 0,
         duracaoTotalSegundos: duracaoTotalSegundos,
@@ -66,13 +93,11 @@ class AnalyticsService {
         vezesReassistido: 0,
       );
 
-      final docRef = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('analytics')
-          .add(visualizacao.toMap());
+      final docRef = await analyticsRef.add(visualizacao.toMap());
 
-      print('✅ Visualização iniciada! ID: ${docRef.id}');
+      print(
+        '✅ Visualização iniciada! Perfil: $perfilApelido, ID: ${docRef.id}',
+      );
       return docRef.id;
     } catch (e) {
       print('❌ Erro ao iniciar visualização: $e');
@@ -84,24 +109,29 @@ class AnalyticsService {
   Future<void> finalizarVisualizacao({
     required String visualizacaoId,
     required int duracaoAssistidaSegundos,
+    String? perfilFilhoApelido, // ✅ NOVO: Precisa saber qual perfil
   }) async {
     try {
       final user = _auth.currentUser;
       if (user == null) return;
 
-      final docRef = _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('analytics')
-          .doc(visualizacaoId);
+      // ✅ Se não passar o perfil, tenta buscar da visualização
+      if (perfilFilhoApelido == null || perfilFilhoApelido.isEmpty) {
+        print('⚠️ Perfil não informado ao finalizar visualização');
+        return;
+      }
+
+      final analyticsRef = _getAnalyticsRef(user.uid, perfilFilhoApelido);
+      final docRef = analyticsRef.doc(visualizacaoId);
 
       final doc = await docRef.get();
       if (!doc.exists) return;
 
-      final data = doc.data()!;
+      final data = doc.data() as Map<String, dynamic>;
       final duracaoTotal = data['duracaoTotalSegundos'] as int;
       final percentual = (duracaoAssistidaSegundos / duracaoTotal * 100);
-      final concluido = percentual >= 90; // Considera concluído se assistiu 90%+
+      final concluido =
+          percentual >= 90; // Considera concluído se assistiu 90%+
 
       await docRef.update({
         'fimVisualizacao': Timestamp.now(),
@@ -119,17 +149,14 @@ class AnalyticsService {
   /// Busca visualização recente (últimas 24h) do mesmo vídeo
   Future<String?> _buscarVisualizacaoRecente(
     String userId,
-    String perfilFilhoApelido,
+    String perfilApelido,
     String videoId,
   ) async {
     try {
       final ontem = DateTime.now().subtract(const Duration(hours: 24));
+      final analyticsRef = _getAnalyticsRef(userId, perfilApelido);
 
-      final query = await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('analytics')
-          .where('perfilFilhoApelido', isEqualTo: perfilFilhoApelido)
+      final query = await analyticsRef
           .where('videoId', isEqualTo: videoId)
           .where('inicioVisualizacao', isGreaterThan: Timestamp.fromDate(ontem))
           .limit(1)
@@ -155,20 +182,21 @@ class AnalyticsService {
       final user = _auth.currentUser;
       if (user == null) return null;
 
+      final perfilApelido = perfilFilhoApelido.isNotEmpty
+          ? perfilFilhoApelido
+          : 'Usuário';
+
       final sessao = SessaoApp(
         id: '',
-        perfilFilhoApelido: perfilFilhoApelido,
+        perfilFilhoApelido: perfilApelido,
         inicioSessao: DateTime.now(),
         duracaoSegundos: 0,
       );
 
-      final docRef = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('sessoes')
-          .add(sessao.toMap());
+      final sessoesRef = _getSessoesRef(user.uid, perfilApelido);
+      final docRef = await sessoesRef.add(sessao.toMap());
 
-      print('✅ Sessão iniciada! ID: ${docRef.id}');
+      print('✅ Sessão iniciada! Perfil: $perfilApelido, ID: ${docRef.id}');
       return docRef.id;
     } catch (e) {
       print('❌ Erro ao iniciar sessão: $e');
@@ -177,21 +205,25 @@ class AnalyticsService {
   }
 
   /// Finaliza sessão (quando sai do app)
-  Future<void> finalizarSessao(String sessaoId) async {
+  Future<void> finalizarSessao(
+    String sessaoId,
+    String perfilFilhoApelido, // ✅ NOVO: Precisa saber qual perfil
+  ) async {
     try {
       final user = _auth.currentUser;
       if (user == null) return;
 
-      final docRef = _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('sessoes')
-          .doc(sessaoId);
+      final perfilApelido = perfilFilhoApelido.isNotEmpty
+          ? perfilFilhoApelido
+          : 'Usuário';
+
+      final sessoesRef = _getSessoesRef(user.uid, perfilApelido);
+      final docRef = sessoesRef.doc(sessaoId);
 
       final doc = await docRef.get();
       if (!doc.exists) return;
 
-      final data = doc.data()!;
+      final data = doc.data() as Map<String, dynamic>;
       final inicioSessao = (data['inicioSessao'] as Timestamp).toDate();
       final duracao = DateTime.now().difference(inicioSessao).inSeconds;
 
@@ -219,17 +251,16 @@ class AnalyticsService {
       final user = _auth.currentUser;
       if (user == null) return [];
 
-      var query = _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('analytics')
-          .where('perfilFilhoApelido', isEqualTo: perfilFilhoApelido)
-          .orderBy('inicioVisualizacao', descending: true);
+      final perfilApelido = perfilFilhoApelido.isNotEmpty
+          ? perfilFilhoApelido
+          : 'Usuário';
+
+      final analyticsRef = _getAnalyticsRef(user.uid, perfilApelido);
+      var query = analyticsRef.orderBy('inicioVisualizacao', descending: true);
 
       // Filtrar por período se especificado
       if (limiteDias != null) {
-        final dataLimite =
-            DateTime.now().subtract(Duration(days: limiteDias));
+        final dataLimite = DateTime.now().subtract(Duration(days: limiteDias));
         query = query.where(
           'inicioVisualizacao',
           isGreaterThan: Timestamp.fromDate(dataLimite),
@@ -239,7 +270,12 @@ class AnalyticsService {
       final snapshot = await query.get();
 
       return snapshot.docs
-          .map((doc) => VideoVisualizacao.fromMap(doc.id, doc.data()))
+          .map(
+            (doc) => VideoVisualizacao.fromMap(
+              doc.id,
+              doc.data() as Map<String, dynamic>,
+            ),
+          )
           .toList();
     } catch (e) {
       print('❌ Erro ao buscar visualizações: $e');
@@ -296,17 +332,24 @@ class AnalyticsService {
       final user = _auth.currentUser;
       if (user == null) return [];
 
-      final snapshot = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('analytics')
-          .where('perfilFilhoApelido', isEqualTo: perfilFilhoApelido)
+      final perfilApelido = perfilFilhoApelido.isNotEmpty
+          ? perfilFilhoApelido
+          : 'Usuário';
+
+      final analyticsRef = _getAnalyticsRef(user.uid, perfilApelido);
+
+      final snapshot = await analyticsRef
           .orderBy('vezesReassistido', descending: true)
           .limit(limite)
           .get();
 
       return snapshot.docs
-          .map((doc) => VideoVisualizacao.fromMap(doc.id, doc.data()))
+          .map(
+            (doc) => VideoVisualizacao.fromMap(
+              doc.id,
+              doc.data() as Map<String, dynamic>,
+            ),
+          )
           .toList();
     } catch (e) {
       print('❌ Erro ao buscar vídeos mais assistidos: $e');
@@ -343,16 +386,15 @@ class AnalyticsService {
       final user = _auth.currentUser;
       if (user == null) return [];
 
-      var query = _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('sessoes')
-          .where('perfilFilhoApelido', isEqualTo: perfilFilhoApelido)
-          .orderBy('inicioSessao', descending: true);
+      final perfilApelido = perfilFilhoApelido.isNotEmpty
+          ? perfilFilhoApelido
+          : 'Usuário';
+
+      final sessoesRef = _getSessoesRef(user.uid, perfilApelido);
+      var query = sessoesRef.orderBy('inicioSessao', descending: true);
 
       if (limiteDias != null) {
-        final dataLimite =
-            DateTime.now().subtract(Duration(days: limiteDias));
+        final dataLimite = DateTime.now().subtract(Duration(days: limiteDias));
         query = query.where(
           'inicioSessao',
           isGreaterThan: Timestamp.fromDate(dataLimite),
@@ -362,7 +404,10 @@ class AnalyticsService {
       final snapshot = await query.get();
 
       return snapshot.docs
-          .map((doc) => SessaoApp.fromMap(doc.id, doc.data()))
+          .map(
+            (doc) =>
+                SessaoApp.fromMap(doc.id, doc.data() as Map<String, dynamic>),
+          )
           .toList();
     } catch (e) {
       print('❌ Erro ao buscar sessões: $e');
@@ -417,7 +462,7 @@ class AnalyticsService {
       'Quinta',
       'Sexta',
       'Sábado',
-      'Domingo'
+      'Domingo',
     ];
 
     for (var sessao in sessoes) {

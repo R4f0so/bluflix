@@ -60,9 +60,14 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
       print('📊 Total de perfis filhos encontrados: ${perfisFilhos.length}');
 
       setState(() {
-        _perfisFilhos = perfisFilhos
-            .map((perfil) => Map<String, dynamic>.from(perfil))
-            .toList();
+        // ✅ CORREÇÃO: Garante que interesses seja uma nova lista independente
+        _perfisFilhos = perfisFilhos.map((p) {
+          final perfil = Map<String, dynamic>.from(p);
+          if (perfil.containsKey('interesses')) {
+            perfil['interesses'] = List<String>.from(perfil['interesses'] ?? []);
+          }
+          return perfil;
+        }).toList();
         _isLoading = false;
       });
 

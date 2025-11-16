@@ -13,6 +13,7 @@ import 'package:bluflix/presentation/screens/onboarding/preferencias_filho_scree
 import 'package:bluflix/presentation/screens/catalogo/catalogo_screen.dart';
 import 'package:bluflix/presentation/screens/catalogo/lista_videos_screen_youtube.dart';
 import 'package:bluflix/presentation/screens/catalogo/video_player_youtube_screen.dart';
+import 'package:bluflix/presentation/screens/catalogo/favoritos_screen.dart';
 import 'package:bluflix/presentation/screens/perfil/adicionar_perfis_screen.dart';
 import 'package:bluflix/presentation/screens/perfil/mudar_perfil_screen.dart';
 import 'package:bluflix/presentation/screens/perfil/gerenciamento_pais_screen.dart';
@@ -26,8 +27,8 @@ import 'package:bluflix/presentation/screens/admin/gerenciamento_admin_screen.da
 import 'package:bluflix/presentation/screens/admin/admin_gerenciar_videos_screen.dart';
 import 'package:bluflix/presentation/screens/admin/admin_add_video_screen.dart';
 import 'package:bluflix/presentation/screens/admin/admin_listar_videos_screen.dart';
-import 'package:bluflix/data/models/video_model_youtube.dart';
 import 'package:bluflix/presentation/screens/analytics/perfil_filho_analytics_screen.dart';
+import 'package:bluflix/data/models/video_model_youtube.dart';
 
 /// Configuração de rotas do app
 class AppRoutes {
@@ -204,6 +205,11 @@ class AppRoutes {
           return VideoPlayerYoutubeScreen(video: video);
         },
       ),
+      GoRoute(
+        path: '/favoritos',
+        name: 'favoritos',
+        builder: (context, state) => const FavoritosScreen(),
+      ),
 
       // ═══════════════════════════════════════════════════════════════
       // ADMIN - PAINEL E GERENCIAMENTO
@@ -236,8 +242,11 @@ class AppRoutes {
         path: '/analytics/:perfilFilhoApelido',
         name: 'perfil-filho-analytics',
         builder: (context, state) {
-          final perfilFilhoApelido = state.pathParameters['perfilFilhoApelido']!;
-          return PerfilFilhoAnalyticsScreen(perfilFilhoApelido: perfilFilhoApelido);
+          final perfilFilhoApelido =
+              state.pathParameters['perfilFilhoApelido']!;
+          return PerfilFilhoAnalyticsScreen(
+            perfilFilhoApelido: perfilFilhoApelido,
+          );
         },
       ),
     ],

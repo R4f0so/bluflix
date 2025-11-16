@@ -14,18 +14,55 @@ class CatalogoScreen extends StatefulWidget {
   State<CatalogoScreen> createState() => _CatalogoScreenState();
 }
 
-class _CatalogoScreenState extends State<CatalogoScreen> {
+class _CatalogoScreenState extends State<CatalogoScreen> 
+    with WidgetsBindingObserver { // ✅ ADICIONADO
   bool _isLoading = true;
   List<String> _generosVisiveis = [];
   bool _isAdmin = false;
+  String? _perfilAtualApelido;
+  int _favoritosCount = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // ✅ ADICIONADO
     _carregarDadosUsuario();
   }
 
+  // ✅ NOVO: Limpar observador
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // ✅ NOVO: Detecta quando a tela volta ao foco
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      print('🔄 App voltou ao primeiro plano - atualizando catálogo');
+      _carregarFavoritos(); // Recarrega favoritos
+    }
+  }
+
+  // ✅ Detecta quando o perfil muda
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
+    final perfilAtivo = perfilProvider.perfilAtivoApelido;
+    
+    // Se mudou de perfil, recarrega os dados
+    if (_perfilAtualApelido != perfilAtivo) {
+      print('🔄 PERFIL MUDOU: $_perfilAtualApelido → $perfilAtivo');
+      _perfilAtualApelido = perfilAtivo;
+      _carregarDadosUsuario();
+    }
+  }
+
   Future<void> _carregarDadosUsuario() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
     try {
@@ -38,6 +75,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
       print("🔵 Carregando dados do usuário...");
       print("   perfilAtivoApelido: ${perfilProvider.perfilAtivoApelido}");
+      print("   isPerfilPai: ${perfilProvider.isPerfilPai}");
 
       if (user != null) {
         final userDoc = await FirebaseFirestore.instance
@@ -60,9 +98,12 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               "✅ Usando perfil ativo: ${perfilProvider.perfilAtivoApelido}",
             );
 
-            // Carregar preferências baseado no tipo de perfil
+            // ═══════════════════════════════════════════════════════
+            // CARREGAR GÊNEROS BASEADO NO TIPO DE PERFIL
+            // ═══════════════════════════════════════════════════════
             if (perfilProvider.isPerfilPai) {
-              // ✅ ATUALIZADO: Gêneros educacionais para o BluFlix
+              print('👨 PERFIL PAI - Mostrando todos os gêneros');
+              
               _generosVisiveis = [
                 'Relaxamento',
                 'Animação',
@@ -73,31 +114,95 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 'Histórias',
                 'Jogos',
               ];
+              
+              print('   ✅ Gêneros visíveis (PAI): $_generosVisiveis');
             } else {
+              print('👶 PERFIL FILHO - Filtrando por interesses');
+              print('   Perfil ativo: ${perfilProvider.perfilAtivoApelido}');
+              
               // Perfil filho vê apenas os gêneros das preferências
-              final perfisFilhos =
-                  data?['perfisFilhos'] as List<dynamic>? ?? [];
+              final perfisFilhos = data?['perfisFilhos'] as List<dynamic>? ?? [];
+              print('   📊 Total de perfis filhos no Firestore: ${perfisFilhos.length}');
+              
+              // ✅ Debug: Mostrar todos os perfis
+              for (var i = 0; i < perfisFilhos.length; i++) {
+                final perfil = perfisFilhos[i];
+                print('   📋 Perfil $i: ${perfil['apelido']} - Interesses: ${perfil['interesses']}');
+              }
 
               final perfilFilhoAtual = perfisFilhos.firstWhere(
-                (perfil) =>
-                    perfil['apelido'] == perfilProvider.perfilAtivoApelido,
+                (perfil) => perfil['apelido'] == perfilProvider.perfilAtivoApelido,
                 orElse: () => null,
               );
 
+              print('   🔍 Perfil encontrado? ${perfilFilhoAtual != null}');
+
               if (perfilFilhoAtual != null) {
-                final interesses =
-                    perfilFilhoAtual['interesses'] as List<dynamic>? ?? [];
+                final interesses = perfilFilhoAtual['interesses'] as List<dynamic>? ?? [];
+                print('   🎯 Interesses do perfil: $interesses');
+                
                 _generosVisiveis = List<String>.from(interesses);
+                
+                print('   ✅ Gêneros visíveis (FILHO): $_generosVisiveis');
+              } else {
+                print('   ❌ ERRO: Perfil filho não encontrado!');
+                print('   ⚠️ Mostrando todos os gêneros por segurança');
+                
+                _generosVisiveis = [
+                  'Relaxamento',
+                  'Animação',
+                  'Música',
+                  'Natureza',
+                  'Ciências',
+                  'Arte',
+                  'Histórias',
+                  'Jogos',
+                ];
               }
             }
           }
         }
       }
 
+      // ✅ Carregar favoritos também
+      await _carregarFavoritos();
+
+      if (!mounted) return;
       setState(() => _isLoading = false);
     } catch (e) {
       print("❌ Erro ao carregar dados: $e");
+      if (!mounted) return;
       setState(() => _isLoading = false);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // CARREGAR CONTADOR DE FAVORITOS
+  // ═══════════════════════════════════════════════════════════════
+  Future<void> _carregarFavoritos() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
+      final perfilAtivo = perfilProvider.perfilAtivoApelido ?? 'Usuário';
+
+      final favoritosSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('perfis')
+          .doc(perfilAtivo)
+          .collection('favoritos')
+          .get();
+
+      if (!mounted) return;
+      setState(() {
+        _favoritosCount = favoritosSnapshot.docs.length;
+      });
+
+      print('📱 Favoritos carregados: $_favoritosCount');
+    } catch (e) {
+      print('❌ Erro ao carregar favoritos: $e');
     }
   }
 
@@ -116,7 +221,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.5),
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return Dialog(
           alignment: Alignment.topRight,
           insetPadding: const EdgeInsets.only(top: 70, right: 20),
@@ -236,7 +341,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   label: 'Mudar Avatar',
                   isDarkMode: appTema.isDarkMode,
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(dialogContext);
                     context.push('/mudar-avatar');
                   },
                 ),
@@ -245,7 +350,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   label: 'Mudar Perfil',
                   isDarkMode: appTema.isDarkMode,
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(dialogContext);
                     context.push('/mudar-perfil');
                   },
                 ),
@@ -254,7 +359,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   label: 'Adicionar Familiar',
                   isDarkMode: appTema.isDarkMode,
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(dialogContext);
                     context.push('/adicionar-perfis');
                   },
                 ),
@@ -263,7 +368,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   label: 'Configurações',
                   isDarkMode: appTema.isDarkMode,
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(dialogContext);
                     context.push('/perfil-configs');
                   },
                 ),
@@ -278,7 +383,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                     isDarkMode: appTema.isDarkMode,
                     iconColor: Colors.orange,
                     onTap: () {
-                      Navigator.pop(context);
+                      Navigator.pop(dialogContext);
                       context.go('/gerenciamento-admin');
                     },
                   ),
@@ -289,7 +394,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                     isDarkMode: appTema.isDarkMode,
                     iconColor: Colors.orange,
                     onTap: () {
-                      Navigator.pop(context);
+                      Navigator.pop(dialogContext);
                       context.push('/admin/gerenciar-videos');
                     },
                   ),
@@ -303,9 +408,11 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   isDestructive: true,
                   isDarkMode: appTema.isDarkMode,
                   onTap: () async {
-                    Navigator.pop(context);
+                    Navigator.pop(dialogContext);
                     await FirebaseAuth.instance.signOut();
-                    if (mounted) context.go('/options');
+                    if (!mounted) return;
+                    if (!context.mounted) return;
+                    context.go('/options');
                   },
                 ),
               ],
@@ -358,15 +465,12 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   @override
   Widget build(BuildContext context) {
     final appTema = Provider.of<AppTema>(context);
-    // ✅ listen: true para rebuild quando perfil mudar
     final perfilProvider = Provider.of<PerfilProvider>(context);
     final userName = perfilProvider.perfilAtivoApelido ?? 'Usuário';
     final userAvatar = perfilProvider.perfilAtivoAvatar ?? 'assets/avatar1.png';
 
-    // ✅ Calcula se deve mostrar opções de admin
     final bool mostrarOpcoesAdmin = _isAdmin && perfilProvider.isPerfilPai;
 
-    // 🔍 DEBUG
     print('🔍 DEBUG catalogo_screen BUILD:');
     print('   _isAdmin: $_isAdmin');
     print('   perfilProvider.isPerfilPai: ${perfilProvider.isPerfilPai}');
@@ -399,7 +503,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
-                    // Seta de voltar (APENAS para perfil pai)
                     if (perfilProvider.isPerfilPai)
                       IconButton(
                         icon: const Icon(Icons.arrow_back, size: 28),
@@ -408,7 +511,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       ),
                     const Spacer(),
 
-                    // ✅ Badge de Admin (apenas se for admin E perfil pai)
                     if (mostrarOpcoesAdmin)
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -476,75 +578,99 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: GridView.count(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 1.1,
-                    children: [
-                      if (_generosVisiveis.contains('Relaxamento'))
-                        _buildGeneroCard(
-                          emoji: '😴',
-                          genero: 'Relaxamento',
-                          cor: Colors.blue,
-                          appTema: appTema,
-                        ),
-                      if (_generosVisiveis.contains('Animação'))
-                        _buildGeneroCard(
-                          emoji: '🎨',
-                          genero: 'Animação',
-                          cor: Colors.purple,
-                          appTema: appTema,
-                        ),
-                      if (_generosVisiveis.contains('Música'))
-                        _buildGeneroCard(
-                          emoji: '🎵',
-                          genero: 'Música',
-                          cor: Colors.pink,
-                          appTema: appTema,
-                        ),
-                      if (_generosVisiveis.contains('Natureza'))
-                        _buildGeneroCard(
-                          emoji: '🌿',
-                          genero: 'Natureza',
-                          cor: Colors.green,
-                          appTema: appTema,
-                        ),
-                      if (_generosVisiveis.contains('Ciências'))
-                        _buildGeneroCard(
-                          emoji: '🔬',
-                          genero: 'Ciências',
-                          cor: Colors.cyan,
-                          appTema: appTema,
-                        ),
-                      if (_generosVisiveis.contains('Arte'))
-                        _buildGeneroCard(
-                          emoji: '🖌️',
-                          genero: 'Arte',
-                          cor: Colors.orange,
-                          appTema: appTema,
-                        ),
-                      if (_generosVisiveis.contains('Histórias'))
-                        _buildGeneroCard(
-                          emoji: '📖',
-                          genero: 'Histórias',
-                          cor: Colors.brown,
-                          appTema: appTema,
-                        ),
-                      if (_generosVisiveis.contains('Jogos'))
-                        _buildGeneroCard(
-                          emoji: '🎮',
-                          genero: 'Jogos',
-                          cor: Colors.red,
-                          appTema: appTema,
-                        ),
-                    ],
-                  ),
+                  child: RefreshIndicator( // ✅ ADICIONADO
+                    onRefresh: () async {
+                      await _carregarDadosUsuario();
+                      await _carregarFavoritos();
+                    },
+                    color: const Color(0xFFA9DBF4),
+                    child: GridView.count(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: 1.1,
+                      children: [
+                        if (_generosVisiveis.contains('Relaxamento'))
+                          _buildGeneroCard(
+                            emoji: '😴',
+                            genero: 'Relaxamento',
+                            cor: Colors.blue,
+                            appTema: appTema,
+                          ),
+                        if (_generosVisiveis.contains('Animação'))
+                          _buildGeneroCard(
+                            emoji: '🎨',
+                            genero: 'Animação',
+                            cor: Colors.purple,
+                            appTema: appTema,
+                          ),
+                        if (_generosVisiveis.contains('Música'))
+                          _buildGeneroCard(
+                            emoji: '🎵',
+                            genero: 'Música',
+                            cor: Colors.pink,
+                            appTema: appTema,
+                          ),
+                        if (_generosVisiveis.contains('Natureza'))
+                          _buildGeneroCard(
+                            emoji: '🌿',
+                            genero: 'Natureza',
+                            cor: Colors.green,
+                            appTema: appTema,
+                          ),
+                        if (_generosVisiveis.contains('Ciências'))
+                          _buildGeneroCard(
+                            emoji: '🔬',
+                            genero: 'Ciências',
+                            cor: Colors.cyan,
+                            appTema: appTema,
+                          ),
+                        if (_generosVisiveis.contains('Arte'))
+                          _buildGeneroCard(
+                            emoji: '🖌️',
+                            genero: 'Arte',
+                            cor: Colors.orange,
+                            appTema: appTema,
+                          ),
+                        if (_generosVisiveis.contains('Histórias'))
+                          _buildGeneroCard(
+                            emoji: '📖',
+                            genero: 'Histórias',
+                            cor: Colors.brown,
+                            appTema: appTema,
+                          ),
+                        if (_generosVisiveis.contains('Jogos'))
+                          _buildGeneroCard(
+                            emoji: '🎮',
+                            genero: 'Jogos',
+                            cor: Colors.red,
+                            appTema: appTema,
+                          ),
+                      ],
+                    ),
+                  ), // ✅ Fecha RefreshIndicator
                 ),
               ),
 
               const SizedBox(height: 20),
             ],
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          await context.push('/favoritos');
+          if (!mounted) return;
+          _carregarFavoritos();
+        },
+        backgroundColor: const Color(0xFFA9DBF4),
+        icon: const Icon(Icons.favorite, color: Colors.red),
+        label: Text(
+          _favoritosCount > 0 ? '$_favoritosCount' : 'Favoritos',
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
           ),
         ),
       ),

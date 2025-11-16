@@ -371,6 +371,11 @@ class _PerfilFilhoAnalyticsScreenState
       (a, b) => a + b,
     );
 
+    // ✅ CORRIGIDO: Verifica se totalSegundos é zero
+    if (totalSegundos == 0) {
+      return _buildEstadoVazio('Nenhum tempo registrado', appTema);
+    }
+
     return Column(
       children: _generosMaisAssistidos.entries.take(5).map((entry) {
         final percentual = (entry.value / totalSegundos * 100);

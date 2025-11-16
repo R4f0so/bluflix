@@ -93,7 +93,7 @@ class _PreferenciasFilhoScreenState extends State<PreferenciasFilhoScreen> {
 
       // Verifica se já tem 4 perfis
       if (perfisFilhos.length >= 4) {
-        if (!mounted) return;
+        if (!mounted) return; // ✅ Verificação adicionada
         _mostrarErro('Limite de 4 perfis atingido!');
         setState(() => _isLoading = false);
         return;
@@ -103,7 +103,9 @@ class _PreferenciasFilhoScreenState extends State<PreferenciasFilhoScreen> {
       final novoPerfilFilho = {
         'apelido': widget.apelido,
         'avatar': widget.avatar,
-        'interesses': generosSelecionados, // ✅ Padronizado como 'interesses'
+        'interesses': List<String>.from(
+          generosSelecionados,
+        ), // ✅ Cria nova lista
         'criadoEm': Timestamp.now(),
       };
 
@@ -118,7 +120,7 @@ class _PreferenciasFilhoScreenState extends State<PreferenciasFilhoScreen> {
       print("   ✅ Perfil filho salvo com preferências!");
       print("════════════════════════════════");
 
-      if (!mounted) return;
+      if (!mounted) return; // ✅ Verificação adicionada
 
       // Mostra mensagem de sucesso
       ScaffoldMessenger.of(context).showSnackBar(
@@ -129,7 +131,7 @@ class _PreferenciasFilhoScreenState extends State<PreferenciasFilhoScreen> {
         ),
       );
 
-      if (!mounted) return;
+      if (!mounted) return; // ✅ Verificação adicionada
 
       // Define o perfil filho como ativo
       final perfilProvider = Provider.of<PerfilProvider>(
@@ -141,11 +143,14 @@ class _PreferenciasFilhoScreenState extends State<PreferenciasFilhoScreen> {
         avatar: widget.avatar,
         isPai: false,
       );
+
+      if (!mounted) return; // ✅ Verificação adicionada após operação assíncrona
+      
       // Navega para o catálogo
       context.go('/catalogo');
     } catch (e) {
       print("❌ ERRO ao salvar preferências: $e");
-      if (!mounted) return;
+      if (!mounted) return; // ✅ Verificação adicionada
 
       _mostrarErro('Erro ao salvar: ${e.toString()}');
     } finally {

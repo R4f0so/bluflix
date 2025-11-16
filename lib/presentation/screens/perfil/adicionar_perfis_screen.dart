@@ -164,9 +164,14 @@ class _AdicionarPerfisScreenState extends State<AdicionarPerfisScreen> {
           final perfis = data?['perfisFilhos'] as List<dynamic>? ?? [];
 
           setState(() {
-            _perfisFilhos = perfis
-                .map((p) => Map<String, dynamic>.from(p))
-                .toList();
+            // ✅ CORREÇÃO: Garante que interesses seja uma nova lista independente
+            _perfisFilhos = perfis.map((p) {
+              final perfil = Map<String, dynamic>.from(p);
+              if (perfil.containsKey('interesses')) {
+                perfil['interesses'] = List<String>.from(perfil['interesses'] ?? []);
+              }
+              return perfil;
+            }).toList();
             _isLoading = false;
           });
         }

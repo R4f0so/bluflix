@@ -209,9 +209,10 @@ class _EditarPerfilFilhoScreenState extends State<EditarPerfilFilhoScreen> {
         // Atualiza usando o índice correto (mantém o avatar original)
         perfisFilhos[indexCorreto] = {
           'apelido': apelido,
-          'avatar':
-              perfisFilhos[indexCorreto]['avatar'], // Mantém o avatar original
-          'interesses': interessesSelecionados,
+          'avatar': perfisFilhos[indexCorreto]['avatar'],
+          'interesses': List<String>.from(
+            interessesSelecionados,
+          ), // ✅ Cria nova lista
           'criadoEm': perfisFilhos[indexCorreto]['criadoEm'] ?? Timestamp.now(),
           'atualizadoEm': Timestamp.now(),
         };
@@ -219,8 +220,10 @@ class _EditarPerfilFilhoScreenState extends State<EditarPerfilFilhoScreen> {
         // Tudo certo, atualiza normalmente (mantém o avatar original)
         perfisFilhos[widget.perfilIndex] = {
           'apelido': apelido,
-          'avatar': widget.perfilAtual['avatar'], // Mantém o avatar original
-          'interesses': interessesSelecionados,
+          'avatar': widget.perfilAtual['avatar'],
+          'interesses': List<String>.from(
+            interessesSelecionados,
+          ), // ✅ Cria nova lista
           'criadoEm':
               perfisFilhos[widget.perfilIndex]['criadoEm'] ?? Timestamp.now(),
           'atualizadoEm': Timestamp.now(),

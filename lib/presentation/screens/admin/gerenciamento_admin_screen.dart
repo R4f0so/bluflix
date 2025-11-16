@@ -572,6 +572,16 @@ class _GerenciamentoAdminScreenState extends State<GerenciamentoAdminScreen>
                         },
                       ),
                       _buildActionCard(
+                        icon: Icons.favorite,
+                        label: 'Ver Meus\nFavoritos',
+                        color: Colors.red,
+                        appTema: appTema,
+                        onTap: () async {
+                          await context.push('/favoritos');
+                          if (mounted) _carregarDadosAdmin();
+                        },
+                      ),
+                      _buildActionCard(
                         icon: Icons.settings,
                         label: 'Configurações\ndo Sistema',
                         color: Colors.grey,
