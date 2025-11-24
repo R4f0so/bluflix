@@ -24,9 +24,27 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
   bool _isLoading = true;
   bool _isAdmin = false;
 
+  String? _userIdCarregado; // 👈 novo
+  bool _primeiraVez =
+      true; // se você ainda estiver usando o didChangeDependencies
+
   @override
   void initState() {
     super.initState();
+    _carregarPerfisFilhos();
+  }
+
+  // ✅ Recarrega a tela quando o usuário volta para ela
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_primeiraVez) {
+      _primeiraVez = false;
+      return;
+    }
+
+    // sempre que voltar para a tela → recarrega perfis
     _carregarPerfisFilhos();
   }
 
@@ -35,8 +53,10 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
 
     try {
       final user = _auth.currentUser;
+
       if (user == null) {
         print('❌ Usuário não autenticado');
+        if (!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
@@ -45,35 +65,71 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
 
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
 
+      // ⛔ Após await: sempre checar montagem
+      if (!mounted) return;
+
       if (!userDoc.exists) {
         print('❌ Documento do usuário não encontrado');
+        if (!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
 
       final data = userDoc.data();
-
       final tipoUsuario = data?['tipoUsuario'] ?? '';
-      _isAdmin = tipoUsuario == 'admin';
       final perfisFilhos = data?['perfisFilhos'] as List<dynamic>? ?? [];
 
-      print('📊 Total de perfis filhos encontrados: ${perfisFilhos.length}');
+      // ⛔ Uso de context → precisa estar montado
+      final perfilProvider = Provider.of<PerfilProvider>(
+        context,
+        listen: false,
+      );
+
+      // 🔁 Se usuário do Firebase mudou, sincroniza Provider
+      if (_userIdCarregado != user.uid) {
+        _userIdCarregado = user.uid;
+
+        final apelidoPrincipal = data?['apelido'] ?? 'Usuário';
+        final avatarPrincipal = data?['avatar'] ?? 'assets/avatar1.png';
+
+        print(
+          '🔁 Novo usuário detectado. Atualizando PerfilProvider: $apelidoPrincipal',
+        );
+
+        // ⛔ Após await — checar montagem de novo
+        await perfilProvider.setPerfilAtivo(
+          apelido: apelidoPrincipal,
+          avatar: avatarPrincipal,
+          isPai: true,
+        );
+        if (!mounted) return;
+      }
+
+      // ⛔ Antes de setState
+      if (!mounted) return;
 
       setState(() {
-        // ✅ CORREÇÃO: Garante que interesses seja uma nova lista independente
+        _isAdmin = tipoUsuario == 'admin';
+
         _perfisFilhos = perfisFilhos.map((p) {
           final perfil = Map<String, dynamic>.from(p);
           if (perfil.containsKey('interesses')) {
-            perfil['interesses'] = List<String>.from(perfil['interesses'] ?? []);
+            perfil['interesses'] = List<String>.from(
+              perfil['interesses'] ?? [],
+            );
           }
           return perfil;
         }).toList();
+
         _isLoading = false;
       });
 
       print('✅ Perfis filhos carregados: ${_perfisFilhos.length}');
     } catch (e) {
       print('❌ Erro ao carregar perfis filhos: $e');
+
+      if (!mounted) return;
+
       setState(() => _isLoading = false);
     }
   }
@@ -81,15 +137,12 @@ class _GerenciamentoPaisScreenState extends State<GerenciamentoPaisScreen> {
   @override
   Widget build(BuildContext context) {
     final appTema = Provider.of<AppTema>(context);
-    // ✅ IMPORTANTE: listen: true para rebuild quando perfil mudar
     final perfilProvider = Provider.of<PerfilProvider>(context);
     final userName = perfilProvider.perfilAtivoApelido ?? 'Usuário';
     final userAvatar = perfilProvider.perfilAtivoAvatar ?? 'assets/avatar1.png';
 
-    // ✅ Calcula diretamente aqui, usando o provider que está sendo observado
     final bool mostrarOpcoesAdmin = _isAdmin && perfilProvider.isPerfilPai;
 
-    // 🔍 DEBUG: Verificar valores
     print('🔍 DEBUG gerenciamento_pais_screen BUILD:');
     print('   _isAdmin: $_isAdmin');
     print('   perfilProvider.isPerfilPai: ${perfilProvider.isPerfilPai}');
